@@ -7,19 +7,27 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
+import logging
 
-# Import routers (to be created)
-# from app.routes import auth, generate, jobs, subscription
+# Import routers
+from app.routes import generate, jobs
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
-    print("🚀 Mini-Me API starting up...")
-    # Initialize Firebase, Firestore connections here
+    logger.info("🚀 Mini-Me API starting up...")
+    # Initialize connections here if needed
     yield
     # Shutdown
-    print("👋 Mini-Me API shutting down...")
+    logger.info("👋 Mini-Me API shutting down...")
 
 app = FastAPI(
     title="Mini-Me API",
@@ -51,8 +59,9 @@ async def health():
     """Kubernetes health check"""
     return {"status": "ok"}
 
-# TODO: Include routers
+# Include routers
+app.include_router(generate.router, prefix="/api", tags=["generate"])
+app.include_router(jobs.router, prefix="/api", tags=["jobs"])
+# TODO: Add auth and subscription routers later
 # app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-# app.include_router(generate.router, prefix="/api", tags=["generate"])
-# app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 # app.include_router(subscription.router, prefix="/api/subscription", tags=["subscription"])
