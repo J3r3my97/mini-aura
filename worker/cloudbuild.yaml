@@ -1,6 +1,9 @@
 # Cloud Build configuration for Worker service
 # Triggered on push to main branch (worker/ directory changes)
 
+# Use dedicated CI/CD service account
+serviceAccount: 'projects/mini-aura/serviceAccounts/mini-me-cicd@mini-aura.iam.gserviceaccount.com'
+
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'

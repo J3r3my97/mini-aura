@@ -1,6 +1,9 @@
 # Cloud Build configuration for API service
 # Triggered on push to main branch (api/ directory changes)
 
+# Use dedicated CI/CD service account
+serviceAccount: 'projects/mini-aura/serviceAccounts/mini-me-cicd@mini-aura.iam.gserviceaccount.com'
+
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
