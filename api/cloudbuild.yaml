@@ -10,22 +10,22 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/mini-me-api:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:$SHORT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/mini-me-api:latest'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:latest'
       - '.'
     dir: 'api'
 
-  # Push the container image to Container Registry
+  # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/mini-me-api:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/mini-me-api:latest'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:latest'
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -34,7 +34,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'mini-me-api'
-      - '--image=gcr.io/$PROJECT_ID/mini-me-api:$SHORT_SHA'
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:$SHORT_SHA'
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -47,10 +47,10 @@ steps:
       - '--set-env-vars=PROJECT_ID=$PROJECT_ID'
       - '--set-secrets=CLAUDE_API_KEY=CLAUDE_API_KEY:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest'
 
-# Store images in Container Registry
+# Store images in Artifact Registry
 images:
-  - 'gcr.io/$PROJECT_ID/mini-me-api:$SHORT_SHA'
-  - 'gcr.io/$PROJECT_ID/mini-me-api:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mini-me/api:latest'
 
 # Timeout for entire build
 timeout: 1200s
