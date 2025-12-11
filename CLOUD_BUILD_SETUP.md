@@ -16,33 +16,80 @@ When you push to the `main` branch:
 
 ## Setup Steps
 
-### Step 1: Run in Cloud Shell
+### Step 1: Create Dedicated CI/CD Service Account
 
 Open Cloud Shell (https://console.cloud.google.com) and run:
 
 ```bash
 # Set your project ID
-PROJECT_ID="your-project-id"  # Replace with your actual project ID
+PROJECT_ID="mini-aura"  # Your actual project ID
 gcloud config set project $PROJECT_ID
 
 # Enable Cloud Build API
 gcloud services enable cloudbuild.googleapis.com
 
-# Grant Cloud Build permissions to deploy to Cloud Run
-PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+# Create dedicated CI/CD service account
+gcloud iam service-accounts create mini-me-cicd \
+  --display-name="Mini-Me CI/CD Service Account" \
+  --description="Service account for Cloud Build deployments"
 
+# Get the service account email
+CICD_SA="mini-me-cicd@$PROJECT_ID.iam.gserviceaccount.com"
+echo "Created service account: $CICD_SA"
+
+# Grant Cloud Run deployment permissions
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
+  --member="serviceAccount:$CICD_SA" \
   --role="roles/run.admin"
 
+# Grant Container Registry permissions (to push Docker images)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
+  --member="serviceAccount:$CICD_SA" \
+  --role="roles/storage.admin"
+
+# Grant Artifact Registry permissions (for newer projects)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$CICD_SA" \
+  --role="roles/artifactregistry.repoAdmin"
+
+# Grant permission to act as other service accounts
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$CICD_SA" \
   --role="roles/iam.serviceAccountUser"
 
-echo "✅ Cloud Build permissions configured"
+# Grant logs writer permission (to write build logs)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$CICD_SA" \
+  --role="roles/logging.logWriter"
+
+# Grant permission to access secrets (for deployment)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$CICD_SA" \
+  --role="roles/secretmanager.secretAccessor"
+
+echo "✅ CI/CD service account configured with all permissions"
 ```
 
-### Step 2: Connect GitHub Repository
+### Step 2: Create Artifact Registry Repository
+
+Create the Docker repository for storing images:
+
+```bash
+PROJECT_ID="mini-aura"
+REGION="us-central1"
+
+# Create the Artifact Registry repository
+gcloud artifacts repositories create mini-me \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="Docker images for Mini-Me application" \
+  --project=$PROJECT_ID
+
+echo "✅ Artifact Registry repository created!"
+echo "Location: $REGION-docker.pkg.dev/$PROJECT_ID/mini-me"
+```
+
+### Step 3: Connect GitHub Repository
 
 #### Option A: Using Cloud Console (Easier)
 
