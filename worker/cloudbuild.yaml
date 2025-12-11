@@ -1,0 +1,59 @@
+# Cloud Build configuration for Worker service
+# Triggered on push to main branch (worker/ directory changes)
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/mini-me-worker:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/mini-me-worker:latest'
+      - '.'
+    dir: 'worker'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/mini-me-worker:$SHORT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/mini-me-worker:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'mini-me-worker'
+      - '--image=gcr.io/$PROJECT_ID/mini-me-worker:$SHORT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--no-allow-unauthenticated'  # Internal only, called by Pub/Sub
+      - '--memory=2Gi'  # Higher memory for rembg model
+      - '--cpu=2'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--concurrency=1'  # Process one job at a time per instance
+      - '--timeout=600s'  # 10 minutes max per request
+      - '--set-env-vars=PROJECT_ID=$PROJECT_ID'
+      - '--set-secrets=CLAUDE_API_KEY=claude-api-key:latest'
+      - '--service-account=mini-me-worker@$PROJECT_ID.iam.gserviceaccount.com'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/mini-me-worker:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/mini-me-worker:latest'
+
+# Timeout for entire build (longer due to large dependencies)
+timeout: 1800s
+
+options:
+  # Use faster machine type for builds
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
