@@ -7,7 +7,7 @@ google-cloud-storage==2.14.0
 google-cloud-aiplatform==1.42.1
 
 # Anthropic Claude
-anthropic==0.18.1
+anthropic==0.40.0
 
 # Image Processing
 Pillow==10.2.0

@@ -8,20 +8,38 @@ from contextlib import asynccontextmanager
 import base64
 import json
 import os
+import logging
 
-# Import pipeline (to be created)
-# from pipeline import run_pipeline
+# Import pipeline
+from pipeline import run_pipeline
+from utils.firestore import update_job_status
+from rembg import new_session
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
-    print("🚀 Mini-Me Worker starting up...")
-    print("📦 Loading rembg model...")
-    # Pre-load rembg model here for faster processing
+    logger.info("🚀 Mini-Me Worker starting up...")
+    logger.info("📦 Pre-loading rembg model (U2Net)...")
+
+    # Pre-load rembg model into memory (faster processing)
+    try:
+        new_session("u2net")
+        logger.info("✅ rembg model loaded successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to load rembg model: {str(e)}")
+
     yield
+
     # Shutdown
-    print("👋 Mini-Me Worker shutting down...")
+    logger.info("👋 Mini-Me Worker shutting down...")
 
 app = FastAPI(
     title="Mini-Me Worker",
@@ -45,6 +63,8 @@ async def process_job(request: Request):
     Receives Pub/Sub push messages with job_id.
     Processes the generation pipeline.
     """
+    job_id = None
+
     try:
         # Parse Pub/Sub message
         envelope = await request.json()
@@ -61,16 +81,42 @@ async def process_job(request: Request):
 
         # Decode base64 job_id
         job_id = base64.b64decode(data).decode('utf-8')
-        print(f"📨 Received job: {job_id}")
+        logger.info(f"📨 Received job: {job_id}")
 
-        # TODO: Process the job
-        # await run_pipeline(job_id)
+        # Update job status to "processing"
+        await update_job_status(job_id, "processing")
 
-        # For now, just acknowledge
-        print(f"✅ Job {job_id} processed (mock)")
+        # Run the pipeline
+        result = await run_pipeline(job_id)
 
-        return {"status": "ok", "job_id": job_id}
+        # Update job status to "completed"
+        await update_job_status(
+            job_id,
+            "completed",
+            output_url=result['output_url'],
+            metadata=result['metadata']
+        )
+
+        logger.info(f"✅ Job {job_id} completed successfully")
+
+        return {
+            "status": "ok",
+            "job_id": job_id,
+            "output_url": result['output_url']
+        }
 
     except Exception as e:
-        print(f"❌ Error processing job: {str(e)}")
+        logger.error(f"❌ Error processing job {job_id}: {str(e)}", exc_info=True)
+
+        # Update job status to "failed"
+        if job_id:
+            try:
+                await update_job_status(
+                    job_id,
+                    "failed",
+                    error_message=str(e)
+                )
+            except Exception as db_error:
+                logger.error(f"Failed to update job status: {str(db_error)}")
+
         raise HTTPException(status_code=500, detail=str(e))
