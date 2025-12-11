@@ -8,7 +8,7 @@ import base64
 import json
 import logging
 from typing import Dict, List
-from worker.config import CLAUDE_API_KEY, CLAUDE_MODEL, IMAGEN_MODEL, REGION, PROJECT_ID
+from config import CLAUDE_API_KEY, CLAUDE_MODEL, IMAGEN_MODEL, REGION, PROJECT_ID
 
 logger = logging.getLogger(__name__)
 

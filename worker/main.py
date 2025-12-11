@@ -11,8 +11,8 @@ import os
 import logging
 
 # Import pipeline
-from worker.pipeline import run_pipeline
-from worker.utils.firestore import update_job_status
+from pipeline import run_pipeline
+from utils.firestore import update_job_status
 from rembg import new_session
 
 # Configure logging

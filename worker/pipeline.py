@@ -7,16 +7,16 @@ import uuid
 import logging
 from typing import Dict, Any
 
-from worker.config import (
+from config import (
     GCS_UPLOAD_BUCKET,
     GCS_RESULT_BUCKET,
     MINI_ME_SCALE,
     MINI_ME_POSITION
 )
-from worker.utils.firestore import update_job_status, get_job, get_user_for_job
-from worker.utils.gcs import download_from_gcs, upload_to_gcs
-from worker.utils.image_processing import remove_background, composite_images, add_watermark
-from worker.utils.ai import analyze_image_with_claude, generate_imagen_prompt, generate_pixel_art_with_imagen
+from utils.firestore import update_job_status, get_job, get_user_for_job
+from utils.gcs import download_from_gcs, upload_to_gcs
+from utils.image_processing import remove_background, composite_images, add_watermark
+from utils.ai import analyze_image_with_claude, generate_imagen_prompt, generate_pixel_art_with_imagen
 
 logger = logging.getLogger(__name__)
 
