@@ -115,7 +115,7 @@ async def generate(
         )
 
         # Create job in Firestore
-        await create_job(user_id, input_url)
+        await create_job(job_id, user_id, input_url)
 
         # Increment user usage
         await increment_user_usage(user_id)

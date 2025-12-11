@@ -90,11 +90,12 @@ async def increment_user_usage(user_id: str) -> None:
         raise
 
 
-async def create_job(user_id: str, input_image_url: str) -> str:
+async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
     """
     Create a new job in Firestore
 
     Args:
+        job_id: Job ID (provided by caller)
         user_id: User ID
         input_image_url: GCS URL of uploaded image
 
@@ -102,7 +103,6 @@ async def create_job(user_id: str, input_image_url: str) -> str:
         Job ID
     """
     try:
-        job_id = str(uuid.uuid4())
 
         job_data = {
             "job_id": job_id,
