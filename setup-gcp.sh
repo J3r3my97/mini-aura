@@ -155,8 +155,8 @@ echo "  1. CLAUDE_API_KEY"
 echo "  2. STRIPE_SECRET_KEY"
 echo ""
 echo "Run these commands with your actual keys:"
-echo "  echo -n 'your-claude-key' | gcloud secrets create claude-api-key --data-file=-"
-echo "  echo -n 'your-stripe-key' | gcloud secrets create stripe-secret-key --data-file=-"
+echo "  echo -n 'your-claude-key' | gcloud secrets create CLAUDE_API_KEY --data-file=-"
+echo "  echo -n 'your-stripe-key' | gcloud secrets create STRIPE_SECRET_KEY --data-file=-"
 
 # Summary
 echo ""

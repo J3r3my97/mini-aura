@@ -100,24 +100,24 @@ Before the first deployment, add your API keys:
 ```bash
 # Add Claude API key
 echo -n "sk-ant-your-actual-key-here" | \
-  gcloud secrets create claude-api-key \
+  gcloud secrets create CLAUDE_API_KEY \
   --data-file=- \
   --replication-policy="automatic"
 
 # Add Stripe secret key
 echo -n "sk_test_your-actual-key-here" | \
-  gcloud secrets create stripe-secret-key \
+  gcloud secrets create STRIPE_SECRET_KEY \
   --data-file=- \
   --replication-policy="automatic"
 
 # Grant Cloud Run access to secrets
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
 
-gcloud secrets add-iam-policy-binding claude-api-key \
+gcloud secrets add-iam-policy-binding CLAUDE_API_KEY \
   --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 
-gcloud secrets add-iam-policy-binding stripe-secret-key \
+gcloud secrets add-iam-policy-binding STRIPE_SECRET_KEY \
   --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 
@@ -206,8 +206,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ### Secret not found
 
 Make sure secrets are created with the exact names:
-- `claude-api-key`
-- `stripe-secret-key`
+- `CLAUDE_API_KEY`
+- `STRIPE_SECRET_KEY`
 
 List secrets:
 ```bash

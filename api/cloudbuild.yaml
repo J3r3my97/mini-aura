@@ -42,7 +42,7 @@ steps:
       - '--concurrency=80'
       - '--timeout=60s'
       - '--set-env-vars=PROJECT_ID=$PROJECT_ID'
-      - '--set-secrets=CLAUDE_API_KEY=claude-api-key:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest'
+      - '--set-secrets=CLAUDE_API_KEY=CLAUDE_API_KEY:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest'
 
 # Store images in Container Registry
 images:
