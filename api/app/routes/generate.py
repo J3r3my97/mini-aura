@@ -20,6 +20,7 @@ from app.models.schemas import GenerateResponse, JobStatus
 from app.utils.firestore import get_user, create_job, increment_user_usage
 from app.utils.gcs import upload_to_gcs
 from app.utils.pubsub import publish_job
+from app.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +80,7 @@ async def check_user_usage(user_id: str) -> None:
 @router.post("/generate", response_model=GenerateResponse, status_code=201)
 async def generate(
     file: UploadFile = File(..., description="Image file to process"),
-    # TODO: Add user_id from Firebase auth token
-    user_id: str = "test-user"  # Temporary - will come from auth
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Upload image and create generation job
@@ -91,8 +91,13 @@ async def generate(
     - Creates job in Firestore
     - Publishes to Pub/Sub for processing
     - Returns job ID for status polling
+
+    Requires: Firebase authentication token in Authorization header
     """
     try:
+        # Extract user_id from authenticated user
+        user_id = current_user["user_id"]
+
         logger.info(f"Received generate request from user: {user_id}")
 
         # Validate file

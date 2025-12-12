@@ -2,6 +2,8 @@
 Configuration for API Service
 """
 import os
+import json
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,6 +18,25 @@ GCS_RESULT_BUCKET = f"mini-me-results-{PROJECT_ID}"
 
 # Firestore
 FIRESTORE_DATABASE = PROJECT_ID
+
+# Firebase Authentication
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", PROJECT_ID)
+FIREBASE_CREDENTIALS_JSON = os.getenv("FIREBASE_CREDENTIALS_JSON")  # Optional: explicit credentials
+
+# Parse Firebase credentials if provided
+FIREBASE_CREDENTIALS: Optional[dict] = None
+if FIREBASE_CREDENTIALS_JSON:
+    try:
+        # Try parsing as JSON string
+        FIREBASE_CREDENTIALS = json.loads(FIREBASE_CREDENTIALS_JSON)
+    except json.JSONDecodeError:
+        # Try treating it as a file path
+        try:
+            with open(FIREBASE_CREDENTIALS_JSON, 'r') as f:
+                FIREBASE_CREDENTIALS = json.load(f)
+        except Exception:
+            # If both fail, leave as None (will use ADC)
+            pass
 
 # Pub/Sub
 PUBSUB_TOPIC = "generation-jobs"

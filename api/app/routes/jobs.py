@@ -2,13 +2,14 @@
 /api/jobs endpoints
 Get job status and list user jobs
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 import logging
 
 from config import GCS_RESULT_BUCKET
 from app.models.schemas import JobResponse, JobListResponse, JobStatus, JobMetadata
 from app.utils.firestore import get_job, get_user_jobs
 from app.utils.gcs import get_signed_url
+from app.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,7 @@ router = APIRouter()
 @router.get("/jobs/{job_id}", response_model=JobResponse)
 async def get_job_status(
     job_id: str,
-    # TODO: Add user_id from Firebase auth token
-    user_id: str = "test-user"  # Temporary
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get job status by ID
@@ -28,8 +28,13 @@ async def get_job_status(
     - Job metadata
     - Current status (queued, processing, completed, failed)
     - Signed URL for result image (if completed)
+
+    Requires: Firebase authentication token in Authorization header
     """
     try:
+        # Extract user_id from authenticated user
+        user_id = current_user["user_id"]
+
         logger.info(f"Getting job status for: {job_id}")
 
         # Get job from Firestore
@@ -80,15 +85,19 @@ async def get_job_status(
 async def list_user_jobs(
     limit: int = Query(20, ge=1, le=100, description="Number of jobs to return"),
     offset: int = Query(0, ge=0, description="Number of jobs to skip"),
-    # TODO: Add user_id from Firebase auth token
-    user_id: str = "test-user"  # Temporary
+    current_user: dict = Depends(get_current_user)
 ):
     """
     List user's generation jobs with pagination
 
     Returns list of jobs ordered by created_at (newest first)
+
+    Requires: Firebase authentication token in Authorization header
     """
     try:
+        # Extract user_id from authenticated user
+        user_id = current_user["user_id"]
+
         logger.info(f"Listing jobs for user: {user_id} (limit={limit}, offset={offset})")
 
         # Get jobs from Firestore
