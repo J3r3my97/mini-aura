@@ -46,8 +46,8 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 
 # File Upload Configuration
-MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "heic"}
+MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25MB (modern phone cameras can produce large files)
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "heic", "webp"}
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/heic"}
 
 # Rate Limiting

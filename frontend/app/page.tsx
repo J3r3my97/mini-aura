@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 import SignUpModal from '@/components/auth/SignUpModal';
 import api, { JobResponse } from '@/lib/api';
+import { compressImage, validateImageFile } from '@/lib/imageCompression';
 
 export default function Home() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -32,13 +33,28 @@ export default function Home() {
       return;
     }
 
+    // Validate file
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid file');
+      return;
+    }
+
     setError('');
     setUploading(true);
     setProcessing(true);
 
     try {
+      // Compress image before upload
+      const compressedFile = await compressImage(file, {
+        maxWidth: 2048,
+        maxHeight: 2048,
+        maxSizeMB: 5,
+        quality: 0.9,
+      });
+
       // Upload and generate
-      const response = await api.generateAvatar(file);
+      const response = await api.generateAvatar(compressedFile);
       console.log('Generation started:', response);
 
       // Start polling for status
