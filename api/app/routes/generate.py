@@ -54,12 +54,36 @@ def validate_image_file(file: UploadFile) -> None:
         )
 
 
-async def check_user_usage(user_id: str) -> None:
-    """Check if user has available usage"""
+async def check_user_usage(user_id: str, session_id: str = None) -> None:
+    """
+    Check if user has available usage
+
+    Args:
+        user_id: Firebase user ID
+        session_id: Optional Stripe session ID (for one-time payments)
+    """
     user = await get_user(user_id)
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # If one-time session provided, verify payment and allow generation
+    if session_id:
+        try:
+            import stripe
+            from config import STRIPE_SECRET_KEY
+            stripe.api_key = STRIPE_SECRET_KEY
+
+            session = stripe.checkout.Session.retrieve(session_id)
+
+            # Verify session is completed and for this user
+            if (session.payment_status == "paid" and
+                session.metadata.get("firebase_uid") == user_id and
+                session.metadata.get("payment_type") == "onetime"):
+                logger.info(f"One-time payment verified for user {user_id}")
+                return  # Allow generation
+        except Exception as e:
+            logger.error(f"Error verifying one-time session: {str(e)}")
 
     tier = user.get("subscription_tier", "free")
     usage_count = user.get("usage_count", 0)
@@ -80,6 +104,7 @@ async def check_user_usage(user_id: str) -> None:
 @router.post("/generate", response_model=GenerateResponse, status_code=201)
 async def generate(
     file: UploadFile = File(..., description="Image file to process"),
+    session_id: str = None,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -103,8 +128,8 @@ async def generate(
         # Validate file
         validate_image_file(file)
 
-        # Check usage limits
-        await check_user_usage(user_id)
+        # Check usage limits (pass session_id for one-time verification)
+        await check_user_usage(user_id, session_id)
 
         # Generate job ID
         job_id = str(uuid.uuid4())

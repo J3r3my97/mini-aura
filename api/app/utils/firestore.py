@@ -33,7 +33,14 @@ async def create_user(user_id: str, email: str) -> Dict[str, Any]:
             "subscription_status": "active",
             "usage_count": 0,
             "usage_limit": 5,  # Free tier
-            "last_login": datetime.utcnow()
+            "last_login": datetime.utcnow(),
+            # Stripe fields
+            "stripe_customer_id": None,
+            "stripe_subscription_id": None,
+            "stripe_subscription_status": None,
+            "trial_end": None,
+            "subscription_current_period_end": None,
+            "payment_method_added": False
         }
 
         db.collection("users").document(user_id).set(user_data)
@@ -173,4 +180,104 @@ async def get_user_jobs(
 
     except Exception as e:
         logger.error(f"Error getting user jobs: {str(e)}")
+        raise
+
+
+# Stripe-related functions
+
+async def update_user_subscription(
+    user_id: str,
+    tier: str,
+    stripe_customer_id: str = None,
+    stripe_subscription_id: str = None,
+    stripe_subscription_status: str = None,
+    trial_end: datetime = None,
+    current_period_end: datetime = None
+) -> None:
+    """
+    Update user's subscription information after Stripe webhook
+
+    Args:
+        user_id: Firebase user ID
+        tier: Subscription tier (free, starter, creator, pro)
+        stripe_customer_id: Stripe customer ID (optional)
+        stripe_subscription_id: Stripe subscription ID (optional)
+        stripe_subscription_status: Stripe subscription status (optional)
+        trial_end: Trial end timestamp (optional)
+        current_period_end: Current billing period end (optional)
+    """
+    try:
+        from config import USAGE_LIMITS
+
+        user_ref = db.collection("users").document(user_id)
+
+        update_data = {
+            "subscription_tier": tier,
+            "subscription_status": stripe_subscription_status or "active",
+            "usage_limit": USAGE_LIMITS.get(tier, 5)
+        }
+
+        if stripe_customer_id:
+            update_data["stripe_customer_id"] = stripe_customer_id
+        if stripe_subscription_id:
+            update_data["stripe_subscription_id"] = stripe_subscription_id
+        if stripe_subscription_status:
+            update_data["stripe_subscription_status"] = stripe_subscription_status
+        if trial_end:
+            update_data["trial_end"] = trial_end
+        if current_period_end:
+            update_data["subscription_current_period_end"] = current_period_end
+
+        user_ref.update(update_data)
+        logger.info(f"Updated subscription for user {user_id}: {tier}")
+
+    except Exception as e:
+        logger.error(f"Error updating user subscription: {str(e)}")
+        raise
+
+
+async def get_user_by_stripe_customer_id(customer_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Find user by Stripe customer ID
+
+    Args:
+        customer_id: Stripe customer ID
+
+    Returns:
+        User document or None if not found
+    """
+    try:
+        users_ref = db.collection("users")
+        query = users_ref.where("stripe_customer_id", "==", customer_id).limit(1)
+        docs = list(query.stream())
+
+        if docs:
+            return docs[0].to_dict()
+        return None
+
+    except Exception as e:
+        logger.error(f"Error getting user by customer ID: {str(e)}")
+        raise
+
+
+async def cancel_user_subscription(user_id: str) -> None:
+    """
+    Downgrade user to free tier when subscription cancelled
+
+    Args:
+        user_id: Firebase user ID
+    """
+    try:
+        user_ref = db.collection("users").document(user_id)
+        user_ref.update({
+            "subscription_tier": "free",
+            "subscription_status": "cancelled",
+            "stripe_subscription_id": None,
+            "stripe_subscription_status": "canceled",
+            "usage_limit": 5  # Reset to free tier limit
+        })
+        logger.info(f"Cancelled subscription for user: {user_id}")
+
+    except Exception as e:
+        logger.error(f"Error cancelling subscription: {str(e)}")
         raise

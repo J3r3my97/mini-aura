@@ -10,7 +10,7 @@ import os
 import logging
 
 # Import routers
-from app.routes import generate, jobs
+from app.routes import generate, jobs, payments, webhooks
 from app.auth import initialize_firebase
 
 # Configure logging
@@ -72,6 +72,5 @@ async def health():
 # Include routers
 app.include_router(generate.router, prefix="/api", tags=["generate"])
 app.include_router(jobs.router, prefix="/api", tags=["jobs"])
-# TODO: Add auth and subscription routers later
-# app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-# app.include_router(subscription.router, prefix="/api/subscription", tags=["subscription"])
+app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
+app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])

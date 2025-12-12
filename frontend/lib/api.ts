@@ -61,13 +61,17 @@ class ApiClient {
   /**
    * Generate pixel art avatar
    * @param file Image file to process
+   * @param sessionId Optional Stripe session ID for one-time payment
    * @returns Job ID and status
    */
-  async generateAvatar(file: File): Promise<GenerateResponse> {
+  async generateAvatar(file: File, sessionId?: string): Promise<GenerateResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await this.client.post<GenerateResponse>('/api/generate', formData, {
+    // Add session_id as query parameter if present
+    const url = sessionId ? `/api/generate?session_id=${sessionId}` : '/api/generate';
+
+    const response = await this.client.post<GenerateResponse>(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -132,6 +136,41 @@ class ApiClient {
 
     throw new Error('Job polling timeout exceeded');
   }
+
+  /**
+   * Create Stripe checkout session
+   * @param paymentType Type of payment: 'pro' or 'onetime'
+   * @returns Checkout session with redirect URL
+   */
+  async createCheckoutSession(paymentType: 'pro' | 'onetime'): Promise<CheckoutSessionResponse> {
+    const response = await this.client.post<CheckoutSessionResponse>(
+      '/api/payments/create-checkout-session',
+      { payment_type: paymentType }
+    );
+    return response.data;
+  }
+
+  /**
+   * Create Stripe customer portal session
+   * @returns Portal URL for managing subscription
+   */
+  async createPortalSession(): Promise<{ url: string }> {
+    const response = await this.client.post<{ url: string }>(
+      '/api/payments/create-portal-session'
+    );
+    return response.data;
+  }
+
+  /**
+   * Get current user's subscription status
+   * @returns Subscription details
+   */
+  async getSubscriptionStatus(): Promise<SubscriptionStatus> {
+    const response = await this.client.get<SubscriptionStatus>(
+      '/api/payments/subscription-status'
+    );
+    return response.data;
+  }
 }
 
 // ============================================================================
@@ -164,6 +203,22 @@ export interface JobResponse {
 export interface JobListResponse {
   jobs: JobResponse[];
   total: number;
+}
+
+export interface CheckoutSessionResponse {
+  session_id: string;
+  url: string;
+}
+
+export interface SubscriptionStatus {
+  user_id: string;
+  subscription_tier: string;
+  subscription_status?: string;
+  usage_count: number;
+  usage_limit: number;
+  trial_end?: string;
+  current_period_end?: string;
+  has_payment_method: boolean;
 }
 
 // ============================================================================
