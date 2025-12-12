@@ -11,6 +11,7 @@ import logging
 
 # Import routers
 from app.routes import generate, jobs
+from app.auth import initialize_firebase
 
 # Configure logging
 logging.basicConfig(
@@ -24,8 +25,17 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     logger.info("🚀 Mini-Me API starting up...")
-    # Initialize connections here if needed
+
+    # Initialize Firebase Admin SDK
+    try:
+        initialize_firebase()
+        logger.info("✅ Firebase Admin SDK initialized")
+    except Exception as e:
+        logger.error(f"❌ Firebase initialization failed: {str(e)}")
+        # Don't raise - allow app to start for debugging
+
     yield
+
     # Shutdown
     logger.info("👋 Mini-Me API shutting down...")
 
