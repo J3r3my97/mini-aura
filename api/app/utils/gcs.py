@@ -4,15 +4,33 @@ Google Cloud Storage helper functions for API
 from google.cloud import storage
 from google.auth import compute_engine
 from google.auth.transport import requests as auth_requests
+from google.oauth2 import service_account
 from typing import BinaryIO
 import logging
 import uuid
 import datetime
+import json
+import os
 
 logger = logging.getLogger(__name__)
 
-# Initialize GCS client
-storage_client = storage.Client()
+# Initialize GCS client with service account if available
+def _get_storage_client():
+    """Get storage client with service account credentials if available"""
+    creds_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+    if creds_json:
+        try:
+            creds_dict = json.loads(creds_json)
+            credentials = service_account.Credentials.from_service_account_info(creds_dict)
+            return storage.Client(credentials=credentials)
+        except Exception as e:
+            logger.warning(f"Failed to load service account from env: {e}")
+
+    # Fallback to default credentials
+    return storage.Client()
+
+storage_client = _get_storage_client()
 
 
 async def upload_to_gcs(
@@ -53,8 +71,8 @@ async def get_signed_url(
     expiration: int = 3600
 ) -> str:
     """
-    Generate signed URL for GCS blob using service account impersonation
-    Works on Cloud Run without needing a private key file
+    Generate signed URL for GCS blob
+    Uses service account credentials from environment variable
 
     Args:
         bucket_name: GCS bucket name
@@ -65,52 +83,26 @@ async def get_signed_url(
         Signed URL
     """
     try:
-        from google.auth import iam
-        from google.auth.transport import requests as google_requests
-        import google.auth
-
-        # Get default credentials (works on Cloud Run)
-        credentials, project_id = google.auth.default()
-
-        # Create request object
-        request = google_requests.Request()
-
-        # Get service account email from metadata (Cloud Run)
-        try:
-            service_account_email = credentials.service_account_email
-        except AttributeError:
-            # Fallback: use default compute service account
-            import os
-            project_id = os.getenv("PROJECT_ID", "mini-aura")
-            service_account_email = f"{project_id}@appspot.gserviceaccount.com"
-
-        # Use IAM signBlob API to generate signed URL without private key
-        signing_credentials = iam.Signer(
-            request,
-            credentials,
-            service_account_email
-        )
-
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
 
-        # Generate signed URL using IAM-based signing
         url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(seconds=expiration),
-            method="GET",
-            credentials=signing_credentials
+            method="GET"
         )
 
         logger.info(f"Generated signed URL for gs://{bucket_name}/{blob_name}")
         return url
 
+    except AttributeError as e:
+        # No private key available - provide helpful error
+        logger.error(f"Cannot generate signed URL - no service account key: {str(e)}")
+        raise Exception(
+            "Cannot generate signed URLs without a service account key. "
+            "Please set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable "
+            "with service account JSON key content."
+        )
     except Exception as e:
         logger.error(f"Error generating signed URL: {str(e)}")
-        logger.error("Make sure Cloud Run service account has 'Service Account Token Creator' role")
-        raise Exception(
-            "Failed to generate signed URL. "
-            "Please ensure the Cloud Run service account has the "
-            "'roles/iam.serviceAccountTokenCreator' role. "
-            f"Original error: {str(e)}"
-        )
+        raise
