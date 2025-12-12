@@ -105,13 +105,13 @@ git push origin main
 In Vercel project settings → **Environment Variables**, add:
 
 ```bash
-# Firebase Configuration (all from your .env.local)
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBI7eWzKwpTVpPgbnofu2YuBLvlucEa_nA
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=mini-aura.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=mini-aura
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=mini-aura.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=37275206280
-NEXT_PUBLIC_FIREBASE_APP_ID=1:37275206280:web:55daf67011274bff19d53d
+# Firebase Configuration (get from Firebase Console → Project Settings)
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-bucket.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 
 # API URL (IMPORTANT: Use your Cloud Run URL from Part 1)
 NEXT_PUBLIC_API_URL=https://mini-me-api-abc123-uc.a.run.app
