@@ -107,15 +107,10 @@ async def get_signed_url(
 
     except Exception as e:
         logger.error(f"Error generating signed URL: {str(e)}")
-
-        # Fallback: try to make blob public and return public URL
-        try:
-            bucket = storage_client.bucket(bucket_name)
-            blob = bucket.blob(blob_name)
-            blob.make_public()
-            public_url = blob.public_url
-            logger.warning(f"Falling back to public URL: {public_url}")
-            return public_url
-        except Exception as fallback_error:
-            logger.error(f"Fallback also failed: {str(fallback_error)}")
-            raise e
+        logger.error("Make sure Cloud Run service account has 'Service Account Token Creator' role")
+        raise Exception(
+            "Failed to generate signed URL. "
+            "Please ensure the Cloud Run service account has the "
+            "'roles/iam.serviceAccountTokenCreator' role. "
+            f"Original error: {str(e)}"
+        )
