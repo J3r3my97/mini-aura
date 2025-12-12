@@ -23,7 +23,7 @@ if not CLAUDE_API_KEY:
     raise ValueError("CLAUDE_API_KEY environment variable not set")
 
 # AI Model Configuration
-CLAUDE_MODEL = "claude-haiku-4-20250514"
+CLAUDE_MODEL = "claude-haiku-4-5"
 IMAGEN_MODEL = "imagen-3.0-generate-001"
 
 # Image Processing Configuration

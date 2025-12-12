@@ -7,7 +7,8 @@ from vertexai.preview.vision_models import ImageGenerationModel
 import base64
 import json
 import logging
-from typing import Dict, List
+import re
+from typing import Dict, List, Optional
 from config import CLAUDE_API_KEY, CLAUDE_MODEL, IMAGEN_MODEL, REGION, PROJECT_ID
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,45 @@ claude_client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
 # Initialize Vertex AI
 aiplatform.init(project=PROJECT_ID, location=REGION)
+
+
+def extract_json_from_text(text: str) -> Optional[Dict]:
+    """
+    Extract JSON from text that may contain markdown code blocks or extra text
+
+    Args:
+        text: Raw text that may contain JSON
+
+    Returns:
+        Parsed JSON dictionary or None if not found
+    """
+    # Try to find JSON in markdown code blocks first
+    json_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
+    match = re.search(json_pattern, text, re.DOTALL)
+
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # Try to find raw JSON object in the text
+    json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+    match = re.search(json_pattern, text, re.DOTALL)
+
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+
+    # Try parsing the entire text as JSON
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    return None
 
 
 async def analyze_image_with_claude(image_path: str) -> Dict[str, any]:
@@ -81,14 +121,18 @@ Only return valid JSON, no explanation."""
         analysis_text = response.content[0].text
         logger.info(f"Claude response: {analysis_text}")
 
-        analysis = json.loads(analysis_text)
+        # Extract JSON from response (handles markdown code blocks)
+        analysis = extract_json_from_text(analysis_text)
+
+        if not analysis:
+            logger.error(f"Failed to extract JSON from Claude response: {analysis_text}")
+            raise ValueError(f"Could not parse JSON from Claude response: {analysis_text[:200]}")
 
         logger.info(f"Image analysis complete: {analysis}")
         return analysis
 
-    except json.JSONDecodeError as e:
-        logger.error(f"Error parsing Claude JSON response: {str(e)}")
-        logger.error(f"Response was: {analysis_text}")
+    except ValueError as e:
+        logger.error(f"Error parsing Claude response: {str(e)}")
         raise
     except Exception as e:
         logger.error(f"Error analyzing image with Claude: {str(e)}")
@@ -157,14 +201,11 @@ async def generate_pixel_art_with_imagen(prompt: str, output_path: str) -> str:
         # Initialize Imagen model
         model = ImageGenerationModel.from_pretrained(IMAGEN_MODEL)
 
-        # Generate image
+        # Generate image with minimal parameters
+        # Using only guaranteed supported parameters
         response = model.generate_images(
             prompt=prompt,
-            number_of_images=1,
-            aspect_ratio="1:1",
-            safety_filter_level="block_some",
-            person_generation="allow_adult",
-            # Use standard quality (faster, cheaper)
+            number_of_images=1
         )
 
         # Save first image

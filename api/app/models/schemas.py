@@ -1,0 +1,88 @@
+"""
+Pydantic models for API requests and responses
+"""
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from datetime import datetime
+from enum import Enum
+
+
+class SubscriptionTier(str, Enum):
+    """Subscription tier enum"""
+    FREE = "free"
+    STARTER = "starter"
+    CREATOR = "creator"
+    PRO = "pro"
+
+
+class JobStatus(str, Enum):
+    """Job status enum"""
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+# Generate Endpoint Models
+class GenerateResponse(BaseModel):
+    """Response from /api/generate"""
+    job_id: str
+    status: JobStatus
+    message: str = "Job created successfully"
+
+
+# Job Endpoint Models
+class JobMetadata(BaseModel):
+    """Job metadata"""
+    detected_colors: List[str] = []
+    generated_prompt: Optional[str] = None
+    style: str = "lego"
+    processing_time_ms: Optional[int] = None
+
+
+class JobResponse(BaseModel):
+    """Response from /api/jobs/{job_id}"""
+    job_id: str
+    user_id: str
+    status: JobStatus
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    input_image_url: Optional[str] = None
+    output_image_url: Optional[str] = None
+    error_message: Optional[str] = None
+    metadata: Optional[JobMetadata] = None
+
+
+class JobListResponse(BaseModel):
+    """Response from /api/jobs (list)"""
+    jobs: List[JobResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+# User Endpoint Models
+class UserProfile(BaseModel):
+    """User profile"""
+    user_id: str
+    email: str
+    subscription_tier: SubscriptionTier
+    usage_count: int
+    usage_limit: int
+    created_at: datetime
+    last_login: Optional[datetime] = None
+
+
+class UsageResponse(BaseModel):
+    """Response from /api/user/usage"""
+    usage_count: int
+    usage_limit: int
+    subscription_tier: SubscriptionTier
+    remaining: int
+
+
+# Error Models
+class ErrorResponse(BaseModel):
+    """Standard error response"""
+    detail: str
+    error_code: Optional[str] = None
