@@ -201,13 +201,11 @@ async def generate_pixel_art_with_imagen(prompt: str, output_path: str) -> str:
         # Initialize Imagen model
         model = ImageGenerationModel.from_pretrained(IMAGEN_MODEL)
 
-        # Generate image
-        # Note: add_watermark=True by default (SynthID)
-        # For free tier, we'll add our own watermark in compositing step
+        # Generate image with minimal parameters
+        # Using only guaranteed supported parameters
         response = model.generate_images(
             prompt=prompt,
-            number_of_images=1,
-            add_watermark=False,  # We add our own watermark for free tier
+            number_of_images=1
         )
 
         # Save first image
