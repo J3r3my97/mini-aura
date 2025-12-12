@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Neumorphism Color System */
+    --bg-primary: #e6e7f0;
+    --bg-secondary: #f0f1f7;
+    --shadow-light: #ffffff;
+    --shadow-dark: #c8c9d4;
+    --accent: #8b7fc7;
+    --accent-deep: #6b5eb0;
+    --text-primary: #4a4a5e;
+    --text-secondary: #7a7a8e;
+    --success: #7bc89d;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply bg-neu-bg-primary text-neu-text-primary;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Remove default focus outlines, we'll add custom ones */
+  *:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Neumorphic Button Base */
+  .neu-button {
+    @apply bg-neu-bg-primary border-none rounded-neu-button px-8 py-4 font-semibold text-base text-neu-text-primary cursor-pointer transition-all duration-300 ease-in-out;
+    box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  }
+
+  .neu-button:hover {
+    box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  }
+
+  .neu-button:active {
+    box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+    transform: scale(0.98);
+  }
+
+  /* Accent Button */
+  .neu-button-accent {
+    @apply border-none rounded-neu-button px-8 py-4 font-semibold text-base text-white cursor-pointer transition-all duration-300 ease-in-out;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    box-shadow: 6px 6px 12px rgba(139, 127, 199, 0.3), -6px -6px 12px rgba(255, 255, 255, 0.5);
+  }
+
+  .neu-button-accent:hover {
+    box-shadow: 8px 8px 16px rgba(139, 127, 199, 0.4), -8px -8px 16px rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+  }
+
+  .neu-button-accent:active {
+    transform: scale(0.98);
+  }
+
+  /* Neumorphic Card */
+  .neu-card {
+    @apply bg-neu-bg-primary rounded-neu;
+    box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .neu-card:hover {
+    box-shadow: 12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light);
+    transform: translateY(-4px);
+  }
+
+  /* Neumorphic Input */
+  .neu-input {
+    @apply bg-neu-bg-primary border-none rounded-neu-button px-6 py-4 text-base text-neu-text-primary w-full transition-all duration-300;
+    box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+  }
+
+  .neu-input:focus {
+    outline: none;
+    box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light),
+      0 0 0 2px var(--accent);
+  }
+
+  .neu-input::placeholder {
+    @apply text-neu-text-secondary;
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    @apply bg-neu-bg-primary rounded-neu-lg cursor-pointer transition-all duration-300 relative;
+    box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+    padding: 80px 40px;
+    max-width: 600px;
+    margin: 48px auto;
+  }
+
+  .upload-zone::before {
+    content: '';
+    @apply absolute -inset-0.5 rounded-neu-lg opacity-0 transition-opacity duration-300 -z-10;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  }
+
+  .upload-zone:hover {
+    transform: scale(1.02);
+  }
+
+  .upload-zone:hover::before {
+    opacity: 0.15;
+  }
+
+  .upload-zone.dragging {
+    box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+    transform: scale(0.98);
+  }
+
+  /* Upload Icon */
+  .upload-icon {
+    @apply w-20 h-20 mx-auto mb-6 bg-neu-bg-primary rounded-full flex items-center justify-center;
+    box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  }
+
+  /* Feature Icon */
+  .feature-icon {
+    @apply w-20 h-20 mx-auto mb-6 bg-neu-bg-primary rounded-full flex items-center justify-center;
+    box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  }
+
+  /* Section Title */
+  .section-title {
+    @apply text-5xl font-extrabold text-center mb-16 text-neu-text-primary;
+  }
+
+  /* Loader */
+  .loader {
+    @apply w-16 h-16 rounded-full relative;
+    background: conic-gradient(from 0deg, var(--accent), var(--accent-deep), var(--accent));
+    animation: spin 1.5s linear infinite;
+  }
+
+  .loader::after {
+    content: '';
+    @apply absolute rounded-full bg-neu-bg-primary;
+    inset: 8px;
+  }
+
+  /* Result Image */
+  .result-image {
+    @apply max-w-md mx-auto rounded-neu overflow-hidden;
+    box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--text-primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Keyframe animations */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom scrollbar (neumorphic style) */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--shadow-dark);
+  border-radius: 6px;
+  border: 2px solid var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--accent);
+  color: white;
+}
+
+::-moz-selection {
+  background-color: var(--accent);
+  color: white;
+}
