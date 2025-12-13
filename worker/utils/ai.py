@@ -183,40 +183,49 @@ async def generate_imagen_prompt(analysis: Dict[str, any]) -> str:
         response = claude_client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=PROMPT_GENERATION_MAX_TOKENS,
-            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in Game Boy Advance (GBA) style 32-bit pixel art character sprites.",
+            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in everskies-style pixel art character avatars with detailed fashion and clothing.",
             messages=[{
                 "role": "user",
-                "content": f"""Convert this detailed analysis into an optimized Google Imagen prompt for high-quality GBA-style pixel art generation.
+                "content": f"""Convert this detailed analysis into an optimized Google Imagen prompt for high-quality everskies-style pixel art generation.
 
 Analysis:
 {json.dumps(analysis, indent=2)}
 
-Create a prompt for a full-body pixel art character sprite in Game Boy Advance (32-bit) style following these guidelines:
+Create a prompt for a full-body pixel art character sprite in everskies style following these guidelines:
 
 STRUCTURE YOUR PROMPT IN THIS ORDER:
 1. Character Overview: Accurate description matching the person's actual features (skin tone, expression, body type)
 2. Physical Accuracy: CRITICAL - Match the person's real features, hair, and distinguishing characteristics exactly
 3. Full Body Sprite: "full body character", "standing pose", "complete figure from head to toe"
 4. Proportions: "slightly stylized proportions" (not realistic, not chibi - balanced middle ground)
-5. Detailed Appearance: Clothing with specific colors (use hex values), accessories, hair style
-6. Style Keywords: Include "highly pixelated", "chunky visible pixels", "low resolution pixel art", "retro RPG sprite", "blocky pixel aesthetic"
-7. Quality Specifications: "large visible pixels", "chunky pixelated style", "vibrant colors", "prominent pixel blocks"
-8. Technical Requirements: "white background", "centered full-body sprite", "front-facing standing pose"
-9. Negative Constraints: Avoid photorealism, chibi style, oversized features, 3D rendering, blur, anti-aliasing, overly detailed
+5. DETAILED CLOTHING: VERY IMPORTANT - Describe every clothing item in detail:
+   - Specific garment types (hoodie, jeans, jacket, dress, shirt, etc.)
+   - Clothing colors with hex values
+   - Patterns, textures, designs on clothing (stripes, logos, prints, etc.)
+   - Fit and style (oversized, fitted, cropped, etc.)
+   - Layering details (jacket over shirt, etc.)
+6. Accessories & Details: All accessories mentioned (glasses style, jewelry, hat type, shoes, bags, etc.)
+7. Hair Details: Color, length, style, texture
+8. Style Keywords: Include "everskies style", "highly pixelated", "chunky visible pixels", "fashion pixel art", "detailed clothing pixel art"
+9. Quality Specifications: "large visible pixels", "chunky pixelated style", "vibrant colors", "prominent pixel blocks"
+10. Technical Requirements: "white background", "centered full-body sprite", "front-facing standing pose"
+11. Negative Constraints: Avoid photorealism, chibi style, oversized features, 3D rendering, blur, anti-aliasing, smooth gradients
 
 REQUIREMENTS:
 - CRITICAL: Accurately match the person's actual features - this is a personalized avatar, not a generic character
-- Use specific color values from the analysis (hex codes)
+- CRITICAL: DETAILED CLOTHING DESCRIPTIONS - describe every garment, pattern, texture, fit, and layering
+- Use specific color values from the analysis (hex codes) for ALL clothing items
 - Include ALL distinguishing features and accessories from the analysis
 - Match their actual skin tone, facial expression, hair color/style, and body type
-- Full body sprite showing the complete character (head to toe)
-- Slightly stylized but recognizable proportions
+- Full body sprite showing the complete character (head to toe) including shoes
+- Slightly stylized but recognizable proportions (everskies aesthetic)
 - HIGHLY PIXELATED - emphasize chunky, visible pixel blocks (low resolution aesthetic)
 - Blocky pixel art - pixels should be large and clearly visible, not smooth
+- Fashion-forward clothing details - this is about the outfit as much as the person
 - Keep it as a single flowing paragraph
-- Target ~100-150 words for richness
-- Use vivid, specific adjectives that match the person
-- Prioritize accuracy to the person's appearance with clean GBA-style pixel execution
+- Target ~150-200 words for richness (extra length for clothing details)
+- Use vivid, specific adjectives that match the person and their outfit
+- Prioritize accuracy to the person's appearance with everskies-style pixel execution
 
 Return ONLY the prompt text, no explanation or formatting."""
             }]
@@ -270,13 +279,14 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     if color_str and color_str not in raw_prompt:
         raw_prompt = f"{raw_prompt} Primary colors: {color_str}."
 
-    # Ensure quality keywords are present for highly pixelated style
+    # Ensure quality keywords are present for everskies-style pixel art
     quality_keywords = {
+        "everskies": "everskies",
         "pixelated": "pixelated",
         "chunky pixels": "chunky",
         "full body": "full body",
         "pixel art": "pixel art",
-        "sprite": "sprite",
+        "detailed clothing": "clothing",
         "visible pixels": "visible pixels",
         "vibrant colors": "vibrant",
         "white background": "white background"
@@ -287,6 +297,8 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
             # Add missing critical keywords
             if check_keyword == "white background":
                 raw_prompt = f"{raw_prompt} Set on a pure white background."
+            elif check_keyword == "everskies":
+                raw_prompt = f"{raw_prompt} Rendered in everskies style pixel art aesthetic."
             elif check_keyword == "pixelated":
                 raw_prompt = f"{raw_prompt} Highly pixelated with large visible pixel blocks."
             elif check_keyword == "chunky":
@@ -295,6 +307,8 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
                 raw_prompt = f"{raw_prompt} Pixels should be large and clearly visible."
             elif check_keyword == "full body":
                 raw_prompt = f"{raw_prompt} Show complete full body character from head to toe."
+            elif check_keyword == "clothing":
+                raw_prompt = f"{raw_prompt} Include detailed clothing with all garments, patterns, and textures clearly visible."
 
     # Add negative prompt guidance (emphasize avoiding smooth/anti-aliased)
     if "avoid" not in raw_prompt.lower():
