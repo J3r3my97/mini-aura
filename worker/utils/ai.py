@@ -199,8 +199,8 @@ STRUCTURE YOUR PROMPT IN THIS ORDER:
 3. Full Body Sprite: "full body character", "standing pose", "complete figure from head to toe"
 4. Proportions: "slightly stylized proportions" (not realistic, not chibi - balanced middle ground)
 5. Detailed Appearance: Clothing with specific colors (use hex values), accessories, hair style
-6. Style Keywords: Include "32-bit pixel art", "GBA style", "Game Boy Advance aesthetic", "retro RPG sprite", "Fire Emblem style", "Golden Sun inspired"
-7. Quality Specifications: "clean simple pixels", "minimal but effective shading", "vibrant colors", "crisp sprite quality"
+6. Style Keywords: Include "highly pixelated", "chunky visible pixels", "low resolution pixel art", "retro RPG sprite", "blocky pixel aesthetic"
+7. Quality Specifications: "large visible pixels", "chunky pixelated style", "vibrant colors", "prominent pixel blocks"
 8. Technical Requirements: "white background", "centered full-body sprite", "front-facing standing pose"
 9. Negative Constraints: Avoid photorealism, chibi style, oversized features, 3D rendering, blur, anti-aliasing, overly detailed
 
@@ -210,8 +210,9 @@ REQUIREMENTS:
 - Include ALL distinguishing features and accessories from the analysis
 - Match their actual skin tone, facial expression, hair color/style, and body type
 - Full body sprite showing the complete character (head to toe)
-- Slightly stylized but recognizable proportions (like GBA Fire Emblem, Golden Sun characters)
-- Simple, clean pixel art - not overly detailed, not too minimalist
+- Slightly stylized but recognizable proportions
+- HIGHLY PIXELATED - emphasize chunky, visible pixel blocks (low resolution aesthetic)
+- Blocky pixel art - pixels should be large and clearly visible, not smooth
 - Keep it as a single flowing paragraph
 - Target ~100-150 words for richness
 - Use vivid, specific adjectives that match the person
@@ -269,14 +270,14 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     if color_str and color_str not in raw_prompt:
         raw_prompt = f"{raw_prompt} Primary colors: {color_str}."
 
-    # Ensure quality keywords are present for GBA-style pixel art
+    # Ensure quality keywords are present for highly pixelated style
     quality_keywords = {
-        "32-bit": "32-bit",
-        "GBA style": "GBA",
+        "pixelated": "pixelated",
+        "chunky pixels": "chunky",
         "full body": "full body",
         "pixel art": "pixel art",
         "sprite": "sprite",
-        "clean pixels": "clean pixels",
+        "visible pixels": "visible pixels",
         "vibrant colors": "vibrant",
         "white background": "white background"
     }
@@ -286,18 +287,18 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
             # Add missing critical keywords
             if check_keyword == "white background":
                 raw_prompt = f"{raw_prompt} Set on a pure white background."
-            elif check_keyword == "clean pixels":
-                raw_prompt = f"{raw_prompt} Features clean, simple pixel art."
-            elif check_keyword == "32-bit":
-                raw_prompt = f"{raw_prompt} Rendered in 32-bit Game Boy Advance style."
-            elif check_keyword == "GBA":
-                raw_prompt = f"{raw_prompt} Styled like classic GBA RPG sprites."
+            elif check_keyword == "pixelated":
+                raw_prompt = f"{raw_prompt} Highly pixelated with large visible pixel blocks."
+            elif check_keyword == "chunky":
+                raw_prompt = f"{raw_prompt} Features chunky, blocky pixels."
+            elif check_keyword == "visible pixels":
+                raw_prompt = f"{raw_prompt} Pixels should be large and clearly visible."
             elif check_keyword == "full body":
                 raw_prompt = f"{raw_prompt} Show complete full body character from head to toe."
 
-    # Add negative prompt guidance (emphasize avoiding chibi and overly detailed)
+    # Add negative prompt guidance (emphasize avoiding smooth/anti-aliased)
     if "avoid" not in raw_prompt.lower():
-        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, chibi proportions, oversized features, 3D effects, blur, or overly detailed art."
+        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, smooth anti-aliasing, chibi proportions, 3D effects, blur, or overly detailed high-resolution art."
 
     return raw_prompt
 
