@@ -45,7 +45,7 @@ steps:
       - '--concurrency=80'
       - '--timeout=60s'
       - '--set-env-vars=PROJECT_ID=$PROJECT_ID'
-      - '--set-secrets=CLAUDE_API_KEY=CLAUDE_API_KEY:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=GOOGLE_APPLICATION_CREDENTIALS_JSON:latest'
+      - '--set-secrets=CLAUDE_API_KEY=CLAUDE_API_KEY:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=mini-me-storage-key:latest'
       - '--service-account=mini-me-api@$PROJECT_ID.iam.gserviceaccount.com'
 
 # Store images in Artifact Registry
