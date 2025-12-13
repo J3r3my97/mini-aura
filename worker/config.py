@@ -37,3 +37,8 @@ MINI_ME_SCALE = 0.3  # Mini-me is 30% of image height
 MINI_ME_POSITION = "bottom-right"  # Default position
 WATERMARK_TEXT = "mini-me"
 WATERMARK_POSITION = "bottom-left"
+
+# AI Quality Settings
+VISION_ANALYSIS_MAX_TOKENS = 800  # Increased from 500 for richer analysis
+PROMPT_GENERATION_MAX_TOKENS = 400  # Increased from 200 for detailed prompts
+ENABLE_PROMPT_REFINEMENT = True  # Enable post-processing of prompts

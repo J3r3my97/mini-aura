@@ -70,8 +70,13 @@ async def test_claude_image_analysis():
     try:
         result = await analyze_image_with_claude(test_image_path)
 
-        # Check expected keys
-        expected_keys = ['primary_colors', 'pose', 'clothing', 'accessories', 'hair_color']
+        # Check all expected keys for enhanced schema (14 fields)
+        expected_keys = [
+            'primary_colors', 'accent_colors', 'skin_tone', 'facial_expression',
+            'pose', 'pose_detail', 'clothing', 'clothing_detail',
+            'accessories', 'accessory_detail', 'hair_color', 'hair_style',
+            'body_type', 'distinguishing_features'
+        ]
         missing_keys = [k for k in expected_keys if k not in result]
 
         if missing_keys:
@@ -79,12 +84,35 @@ async def test_claude_image_analysis():
             print(f"  Got: {result}")
             return False
 
-        print(f"  ✓ Analysis successful")
+        # Validate data types
+        if not isinstance(result['primary_colors'], list):
+            print(f"  ✗ primary_colors should be a list, got {type(result['primary_colors'])}")
+            return False
+
+        if not isinstance(result['accessories'], list):
+            print(f"  ✗ accessories should be a list, got {type(result['accessories'])}")
+            return False
+
+        if not isinstance(result['distinguishing_features'], list):
+            print(f"  ✗ distinguishing_features should be a list, got {type(result['distinguishing_features'])}")
+            return False
+
+        # Validate color format (hex codes)
+        for color in result['primary_colors']:
+            if not color.startswith('#') or len(color) != 7:
+                print(f"  ✗ Invalid color format: {color} (expected #RRGGBB)")
+                return False
+
+        print(f"  ✓ Enhanced analysis successful (14 fields)")
         print(f"    Primary colors: {result.get('primary_colors')}")
+        print(f"    Skin tone: {result.get('skin_tone')}")
+        print(f"    Expression: {result.get('facial_expression')}")
         print(f"    Pose: {result.get('pose')}")
         print(f"    Clothing: {result.get('clothing')}")
         print(f"    Accessories: {result.get('accessories')}")
-        print(f"    Hair color: {result.get('hair_color')}")
+        print(f"    Hair: {result.get('hair_color')} - {result.get('hair_style')}")
+        print(f"    Body type: {result.get('body_type')}")
+        print(f"    Features: {result.get('distinguishing_features')}")
         return True
 
     except Exception as e:
@@ -95,33 +123,127 @@ async def test_claude_image_analysis():
 
 
 async def test_claude_prompt_generation():
-    """Test Claude prompt generation"""
+    """Test Claude prompt generation with enhanced schema"""
     from utils.ai import generate_imagen_prompt
 
     print("\n✍️  Testing Imagen prompt generation...")
 
+    # Enhanced test analysis with all 14 fields
     test_analysis = {
         "primary_colors": ["#FF6600", "#000000"],
+        "accent_colors": ["#FFFFFF"],
+        "skin_tone": "medium",
+        "facial_expression": "smiling",
         "pose": "standing front-facing",
-        "clothing": "orange hoodie",
-        "accessories": ["glasses"],
-        "hair_color": "brown"
+        "pose_detail": "relaxed stance with arms at sides",
+        "clothing": "orange hoodie and black pants",
+        "clothing_detail": "hoodie has front pocket and drawstrings",
+        "accessories": ["glasses", "hat"],
+        "accessory_detail": "round frame glasses, backwards baseball cap",
+        "hair_color": "brown",
+        "hair_style": "short and spiky",
+        "body_type": "average",
+        "distinguishing_features": ["beard"]
     }
 
     try:
         prompt = await generate_imagen_prompt(test_analysis)
 
-        if not prompt or len(prompt) < 10:
-            print(f"  ✗ Generated prompt too short: {prompt}")
+        if not prompt or len(prompt) < 100:
+            print(f"  ✗ Generated prompt too short (expected ~100-150 words): {len(prompt)} chars")
             return False
 
+        # Quality checks
+        quality_keywords = ["isometric", "pixel art", "voxel", "LEGO", "white background"]
+        missing_keywords = [kw for kw in quality_keywords if kw.lower() not in prompt.lower()]
+
+        if missing_keywords:
+            print(f"  ⚠️  Warning: Missing quality keywords: {missing_keywords}")
+            # Don't fail, but warn
+
         print(f"  ✓ Prompt generated successfully")
-        print(f"    Length: {len(prompt)} chars")
-        print(f"    Preview: {prompt[:100]}...")
+        print(f"    Length: {len(prompt)} chars (~{len(prompt.split())} words)")
+        print(f"    Quality keywords present: {[kw for kw in quality_keywords if kw.lower() in prompt.lower()]}")
+        print(f"    Preview: {prompt[:150]}...")
         return True
 
     except Exception as e:
         print(f"  ✗ Error: {str(e)}")
+        return False
+
+
+async def test_prompt_quality():
+    """Test that generated prompts meet quality standards"""
+    from utils.ai import generate_imagen_prompt, refine_imagen_prompt
+
+    print("\n⭐ Testing prompt quality and refinement...")
+
+    test_analysis = {
+        "primary_colors": ["#FF6600", "#000000"],
+        "accent_colors": [],
+        "skin_tone": "medium",
+        "facial_expression": "smiling",
+        "pose": "standing",
+        "pose_detail": "relaxed",
+        "clothing": "orange hoodie",
+        "clothing_detail": "casual",
+        "accessories": [],
+        "accessory_detail": "",
+        "hair_color": "brown",
+        "hair_style": "short",
+        "body_type": "average",
+        "distinguishing_features": []
+    }
+
+    try:
+        # Generate prompt
+        prompt = await generate_imagen_prompt(test_analysis)
+
+        # Test refinement function
+        raw_test_prompt = "A simple character in orange."
+        refined = refine_imagen_prompt(raw_test_prompt, test_analysis)
+
+        # Quality checks for generated prompt
+        checks_passed = 0
+        total_checks = 5
+
+        if len(prompt) >= 100:
+            checks_passed += 1
+            print(f"  ✓ Length check: {len(prompt)} chars")
+        else:
+            print(f"  ✗ Length check failed: {len(prompt)} chars (expected >= 100)")
+
+        if "isometric" in prompt.lower() or "pixel art" in prompt.lower():
+            checks_passed += 1
+            print(f"  ✓ Style keyword present")
+        else:
+            print(f"  ✗ Missing style keywords")
+
+        if "#FF6600" in prompt or "orange" in prompt.lower():
+            checks_passed += 1
+            print(f"  ✓ Color details present")
+        else:
+            print(f"  ✗ Missing color details")
+
+        if "white background" in prompt.lower():
+            checks_passed += 1
+            print(f"  ✓ Background specification present")
+        else:
+            print(f"  ✗ Missing background specification")
+
+        if len(refined) > len(raw_test_prompt):
+            checks_passed += 1
+            print(f"  ✓ Refinement adds content: {len(raw_test_prompt)} → {len(refined)} chars")
+        else:
+            print(f"  ✗ Refinement didn't enhance prompt")
+
+        print(f"\n  Quality Score: {checks_passed}/{total_checks}")
+        return checks_passed >= 3  # Pass if at least 3/5 checks pass
+
+    except Exception as e:
+        print(f"  ✗ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -196,6 +318,7 @@ async def main():
         ("JSON Extraction", test_claude_json_extraction()),
         ("Claude Image Analysis", test_claude_image_analysis()),
         ("Claude Prompt Generation", test_claude_prompt_generation()),
+        ("Prompt Quality & Refinement", test_prompt_quality()),
         ("Imagen API Parameters", test_imagen_api_call()),
     ]
 
