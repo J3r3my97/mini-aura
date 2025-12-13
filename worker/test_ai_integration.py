@@ -153,8 +153,8 @@ async def test_claude_prompt_generation():
             print(f"  ✗ Generated prompt too short (expected ~100-150 words): {len(prompt)} chars")
             return False
 
-        # Quality checks
-        quality_keywords = ["isometric", "pixel art", "voxel", "LEGO", "white background"]
+        # Quality checks for JRPG pixel art style
+        quality_keywords = ["2D pixel art", "pixel art", "sprite", "JRPG", "retro RPG", "white background"]
         missing_keywords = [kw for kw in quality_keywords if kw.lower() not in prompt.lower()]
 
         if missing_keywords:
@@ -213,9 +213,9 @@ async def test_prompt_quality():
         else:
             print(f"  ✗ Length check failed: {len(prompt)} chars (expected >= 100)")
 
-        if "isometric" in prompt.lower() or "pixel art" in prompt.lower():
+        if "pixel art" in prompt.lower() or "sprite" in prompt.lower() or "jrpg" in prompt.lower():
             checks_passed += 1
-            print(f"  ✓ Style keyword present")
+            print(f"  ✓ Style keyword present (pixel art/sprite/JRPG)")
         else:
             print(f"  ✗ Missing style keywords")
 

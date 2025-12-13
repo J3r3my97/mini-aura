@@ -114,7 +114,7 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         metadata = {
             "detected_colors": analysis.get("primary_colors", []),
             "generated_prompt": prompt,
-            "style": "lego",
+            "style": "jrpg-pixel-art",
             "processing_time_ms": processing_time
         }
 

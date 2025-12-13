@@ -183,34 +183,35 @@ async def generate_imagen_prompt(analysis: Dict[str, any]) -> str:
         response = claude_client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=PROMPT_GENERATION_MAX_TOKENS,
-            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in pixel art and voxel art styles.",
+            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in classic JRPG-style 2D pixel art.",
             messages=[{
                 "role": "user",
-                "content": f"""Convert this detailed analysis into an optimized Google Imagen prompt for high-quality pixel art generation.
+                "content": f"""Convert this detailed analysis into an optimized Google Imagen prompt for high-quality JRPG-style pixel art generation.
 
 Analysis:
 {json.dumps(analysis, indent=2)}
 
-Create a prompt for an isometric voxel/LEGO-style pixel art character following these guidelines:
+Create a prompt for a 2D pixel art character sprite in classic Japanese RPG style following these guidelines:
 
 STRUCTURE YOUR PROMPT IN THIS ORDER:
 1. Character Overview: Brief description with skin tone and expression
 2. Detailed Appearance: Clothing with specific colors (use hex values), accessories, hair
 3. Pose & Body Language: Specific pose details and stance
-4. Style Keywords: Include "isometric pixel art", "voxel art", "LEGO minifigure style", "blocky 3D character"
-5. Quality Specifications: "ultra detailed", "clean edges", "vibrant colors", "professional quality"
-6. Technical Requirements: "white background", "well-lit", "centered composition"
-7. Negative Constraints: Avoid photorealism, blur, distortion
+4. Style Keywords: Include "2D pixel art", "sprite art", "JRPG character", "retro RPG style", "16-bit aesthetic"
+5. Quality Specifications: "crisp pixels", "clean pixel edges", "vibrant colors", "professional sprite quality"
+6. Technical Requirements: "white background", "centered sprite", "front-facing view"
+7. Negative Constraints: Avoid photorealism, 3D rendering, blur, anti-aliasing
 
 REQUIREMENTS:
 - Use specific color values from the analysis (hex codes)
 - Include all distinguishing features and accessories
 - Mention skin tone and facial expression
 - Describe clothing and pose in detail
+- Emphasize 2D sprite character look (like Final Fantasy, Chrono Trigger)
 - Keep it as a single flowing paragraph
 - Target ~100-150 words for richness
 - Use vivid, specific adjectives
-- Prioritize visual clarity
+- Prioritize pixel-perfect clarity
 
 Return ONLY the prompt text, no explanation or formatting."""
             }]
@@ -264,12 +265,13 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     if color_str and color_str not in raw_prompt:
         raw_prompt = f"{raw_prompt} Primary colors: {color_str}."
 
-    # Ensure quality keywords are present
+    # Ensure quality keywords are present for JRPG pixel art style
     quality_keywords = {
-        "isometric pixel art": "isometric",
-        "voxel": "voxel",
-        "LEGO style": "LEGO",
-        "clean edges": "clean edges",
+        "2D pixel art": "2D pixel art",
+        "sprite art": "sprite",
+        "JRPG": "JRPG",
+        "pixel art": "pixel art",
+        "clean pixel edges": "pixel edges",
         "vibrant colors": "vibrant",
         "white background": "white background"
     }
@@ -279,12 +281,14 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
             # Add missing critical keywords
             if check_keyword == "white background":
                 raw_prompt = f"{raw_prompt} Set on a pure white background."
-            elif check_keyword == "clean edges":
-                raw_prompt = f"{raw_prompt} Features clean, sharp edges."
+            elif check_keyword == "pixel edges":
+                raw_prompt = f"{raw_prompt} Features clean, crisp pixel edges."
+            elif check_keyword == "2D pixel art":
+                raw_prompt = f"{raw_prompt} Rendered in 2D pixel art style."
 
-    # Add negative prompt guidance
-    if "avoid" not in raw_prompt.lower() and "photorealistic" not in raw_prompt.lower():
-        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, blurriness, or distorted proportions."
+    # Add negative prompt guidance (emphasize avoiding 3D/photorealism)
+    if "avoid" not in raw_prompt.lower():
+        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, 3D effects, blur, or anti-aliasing."
 
     return raw_prompt
 
