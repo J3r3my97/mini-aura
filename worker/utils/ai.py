@@ -183,7 +183,7 @@ async def generate_imagen_prompt(analysis: Dict[str, any]) -> str:
         response = claude_client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=PROMPT_GENERATION_MAX_TOKENS,
-            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in classic JRPG-style 2D pixel art.",
+            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in classic JRPG-style 2D pixel art with cartoonish chibi proportions.",
             messages=[{
                 "role": "user",
                 "content": f"""Convert this detailed analysis into an optimized Google Imagen prompt for high-quality JRPG-style pixel art generation.
@@ -191,27 +191,30 @@ async def generate_imagen_prompt(analysis: Dict[str, any]) -> str:
 Analysis:
 {json.dumps(analysis, indent=2)}
 
-Create a prompt for a 2D pixel art character sprite in classic Japanese RPG style following these guidelines:
+Create a prompt for a 2D pixel art character sprite in classic Japanese RPG chibi style following these guidelines:
 
 STRUCTURE YOUR PROMPT IN THIS ORDER:
 1. Character Overview: Brief description with skin tone and expression
-2. Detailed Appearance: Clothing with specific colors (use hex values), accessories, hair
-3. Pose & Body Language: Specific pose details and stance
-4. Style Keywords: Include "2D pixel art", "sprite art", "JRPG character", "retro RPG style", "16-bit aesthetic"
-5. Quality Specifications: "crisp pixels", "clean pixel edges", "vibrant colors", "professional sprite quality"
-6. Technical Requirements: "white background", "centered sprite", "front-facing view"
-7. Negative Constraints: Avoid photorealism, 3D rendering, blur, anti-aliasing
+2. Cartoonish Proportions: IMPORTANT - "chibi proportions", "slightly oversized head", "large expressive eyes", "cute deformed style"
+3. Detailed Appearance: Clothing with specific colors (use hex values), accessories, hair
+4. Pose & Body Language: Specific pose details and stance
+5. Style Keywords: Include "2D pixel art", "sprite art", "JRPG character", "chibi style", "retro RPG style", "16-bit aesthetic"
+6. Quality Specifications: "crisp pixels", "clean pixel edges", "vibrant colors", "professional sprite quality"
+7. Technical Requirements: "white background", "centered sprite", "front-facing view"
+8. Negative Constraints: Avoid photorealism, realistic proportions, 3D rendering, blur, anti-aliasing
 
 REQUIREMENTS:
+- CRITICAL: Emphasize "chibi proportions with oversized head and large eyes" for cartoonish look
 - Use specific color values from the analysis (hex codes)
 - Include all distinguishing features and accessories
 - Mention skin tone and facial expression
 - Describe clothing and pose in detail
-- Emphasize 2D sprite character look (like Final Fantasy, Chrono Trigger)
+- Emphasize cute, cartoonish 2D sprite character (like Pokémon, chibi Final Fantasy characters)
+- Less realistic, more stylized and adorable
 - Keep it as a single flowing paragraph
 - Target ~100-150 words for richness
 - Use vivid, specific adjectives
-- Prioritize pixel-perfect clarity
+- Prioritize pixel-perfect clarity with exaggerated cute features
 
 Return ONLY the prompt text, no explanation or formatting."""
             }]
@@ -265,11 +268,13 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     if color_str and color_str not in raw_prompt:
         raw_prompt = f"{raw_prompt} Primary colors: {color_str}."
 
-    # Ensure quality keywords are present for JRPG pixel art style
+    # Ensure quality keywords are present for JRPG chibi pixel art style
     quality_keywords = {
+        "chibi": "chibi",
+        "oversized head": "oversized head",
+        "large eyes": "large eyes",
         "2D pixel art": "2D pixel art",
         "sprite art": "sprite",
-        "JRPG": "JRPG",
         "pixel art": "pixel art",
         "clean pixel edges": "pixel edges",
         "vibrant colors": "vibrant",
@@ -285,10 +290,16 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
                 raw_prompt = f"{raw_prompt} Features clean, crisp pixel edges."
             elif check_keyword == "2D pixel art":
                 raw_prompt = f"{raw_prompt} Rendered in 2D pixel art style."
+            elif check_keyword == "chibi":
+                raw_prompt = f"{raw_prompt} Drawn in cute chibi style with cartoonish proportions."
+            elif check_keyword == "oversized head":
+                raw_prompt = f"{raw_prompt} Character has a slightly oversized head for cute appeal."
+            elif check_keyword == "large eyes":
+                raw_prompt = f"{raw_prompt} Features large, expressive eyes."
 
-    # Add negative prompt guidance (emphasize avoiding 3D/photorealism)
-    if "avoid" not in raw_prompt.lower():
-        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, 3D effects, blur, or anti-aliasing."
+    # Add negative prompt guidance (emphasize avoiding realistic proportions)
+    if "avoid" not in raw_prompt.lower() and "realistic proportions" not in raw_prompt.lower():
+        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, realistic proportions, 3D effects, blur, or anti-aliasing."
 
     return raw_prompt
 
