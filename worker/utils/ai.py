@@ -206,26 +206,29 @@ STRUCTURE YOUR PROMPT IN THIS ORDER:
    - Layering details (jacket over shirt, etc.)
 6. Accessories & Details: All accessories mentioned (glasses style, jewelry, hat type, shoes, bags, etc.)
 7. Hair Details: Color, length, style, texture
-8. Style Keywords: Include "everskies style", "highly pixelated", "chunky visible pixels", "fashion pixel art", "detailed clothing pixel art"
-9. Quality Specifications: "large visible pixels", "chunky pixelated style", "vibrant colors", "prominent pixel blocks"
-10. Technical Requirements: "white background", "centered full-body sprite", "front-facing standing pose"
-11. Negative Constraints: Avoid photorealism, chibi style, oversized features, 3D rendering, blur, anti-aliasing, smooth gradients
+8. Style Keywords: CRITICAL - Include "Everskies pixel avatar style", "retro pixel art", "clean outlines", "soft shading", "simple but expressive details"
+9. Pixel Specifications: "64-128 pixel height character", "visibly pixelated", "low-resolution sprite", "chunky visible pixel blocks"
+10. Pose: "neutral standing pose", "arms relaxed at sides", "front-facing"
+11. Color & Quality: "limited color palette", "classic Everskies proportions", "vibrant but not oversaturated"
+12. Technical Requirements: "pure white background", "centered full-body sprite", "no glow", "no shadows"
+13. Negative Constraints: CRITICAL - Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, oversized features
 
 REQUIREMENTS:
-- CRITICAL: Accurately match the person's actual features - this is a personalized avatar, not a generic character
-- CRITICAL: DETAILED CLOTHING DESCRIPTIONS - describe every garment, pattern, texture, fit, and layering
-- Use specific color values from the analysis (hex codes) for ALL clothing items
-- Include ALL distinguishing features and accessories from the analysis
-- Match their actual skin tone, facial expression, hair color/style, and body type
-- Full body sprite showing the complete character (head to toe) including shoes
-- Slightly stylized but recognizable proportions (everskies aesthetic)
-- HIGHLY PIXELATED - emphasize chunky, visible pixel blocks (low resolution aesthetic)
-- Blocky pixel art - pixels should be large and clearly visible, not smooth
-- Fashion-forward clothing details - this is about the outfit as much as the person
-- Keep it as a single flowing paragraph
-- Target ~150-200 words for richness (extra length for clothing details)
-- Use vivid, specific adjectives that match the person and their outfit
-- Prioritize accuracy to the person's appearance with everskies-style pixel execution
+- CRITICAL: Match person's EXACT features - hairstyle, hair color, facial hair, skin tone, outfit, accessories, overall style
+- CRITICAL: DETAILED CLOTHING - every garment, pattern, texture, fit, layering (silhouette and colors must match)
+- CRITICAL: "Everskies pixel avatar style" with "retro pixel art", "clean outlines", "soft shading"
+- Character specs: "64-128 pixel height", "visibly pixelated", "low-resolution sprite", not smooth/painted
+- Pose: "neutral standing pose", "arms relaxed at sides", "front-facing"
+- Use specific hex color values for ALL clothing items
+- Include ALL distinguishing features and accessories from analysis
+- "Limited color palette" and "classic Everskies proportions" (slightly stylized but recognizable)
+- Full body sprite (head to toe) including shoes
+- "Pure white background", "no glow", "no shadows" - clean sprite only
+- NEVER use: anime, chibi, photorealism, 3D, smooth gradients, blur, oversized features
+- EMPHASIZE: "simple but expressive details", chunky visible pixels, clearly pixelated aesthetic
+- Keep as single flowing paragraph
+- Target ~150-200 words for detailed clothing descriptions
+- Match the person's clothing silhouette and colors while remaining clearly pixelated
 
 Return ONLY the prompt text, no explanation or formatting."""
             }]
@@ -279,40 +282,47 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     if color_str and color_str not in raw_prompt:
         raw_prompt = f"{raw_prompt} Primary colors: {color_str}."
 
-    # Ensure quality keywords are present for everskies-style pixel art
+    # Ensure quality keywords are present for Everskies-style pixel art
     quality_keywords = {
-        "everskies": "everskies",
-        "pixelated": "pixelated",
-        "chunky pixels": "chunky",
-        "full body": "full body",
-        "pixel art": "pixel art",
-        "detailed clothing": "clothing",
-        "visible pixels": "visible pixels",
-        "vibrant colors": "vibrant",
-        "white background": "white background"
+        "Everskies": "Everskies",
+        "retro pixel art": "retro pixel",
+        "clean outlines": "clean outlines",
+        "64-128 pixel height": "pixel height",
+        "visibly pixelated": "visibly pixelated",
+        "neutral standing pose": "standing pose",
+        "arms relaxed": "arms relaxed",
+        "limited color palette": "limited color",
+        "white background": "white background",
+        "no glow": "no glow"
     }
 
     for check_keyword in quality_keywords.values():
         if check_keyword.lower() not in raw_prompt.lower():
             # Add missing critical keywords
             if check_keyword == "white background":
-                raw_prompt = f"{raw_prompt} Set on a pure white background."
-            elif check_keyword == "everskies":
-                raw_prompt = f"{raw_prompt} Rendered in everskies style pixel art aesthetic."
-            elif check_keyword == "pixelated":
-                raw_prompt = f"{raw_prompt} Highly pixelated with large visible pixel blocks."
-            elif check_keyword == "chunky":
-                raw_prompt = f"{raw_prompt} Features chunky, blocky pixels."
-            elif check_keyword == "visible pixels":
-                raw_prompt = f"{raw_prompt} Pixels should be large and clearly visible."
-            elif check_keyword == "full body":
-                raw_prompt = f"{raw_prompt} Show complete full body character from head to toe."
-            elif check_keyword == "clothing":
-                raw_prompt = f"{raw_prompt} Include detailed clothing with all garments, patterns, and textures clearly visible."
+                raw_prompt = f"{raw_prompt} Set on a pure white background with no glow or shadows."
+            elif check_keyword == "Everskies":
+                raw_prompt = f"{raw_prompt} Rendered in Everskies pixel avatar style."
+            elif check_keyword == "retro pixel":
+                raw_prompt = f"{raw_prompt} Retro pixel art aesthetic with clean outlines."
+            elif check_keyword == "clean outlines":
+                raw_prompt = f"{raw_prompt} Features clean, distinct pixel outlines."
+            elif check_keyword == "pixel height":
+                raw_prompt = f"{raw_prompt} Character is 64-128 pixels in height."
+            elif check_keyword == "visibly pixelated":
+                raw_prompt = f"{raw_prompt} Visibly pixelated low-resolution sprite style."
+            elif check_keyword == "standing pose":
+                raw_prompt = f"{raw_prompt} Character in neutral standing pose."
+            elif check_keyword == "arms relaxed":
+                raw_prompt = f"{raw_prompt} Arms relaxed at sides."
+            elif check_keyword == "limited color":
+                raw_prompt = f"{raw_prompt} Uses a limited color palette in classic Everskies proportions."
+            elif check_keyword == "no glow":
+                raw_prompt = f"{raw_prompt} No glow effects or shadows."
 
-    # Add negative prompt guidance (emphasize avoiding smooth/anti-aliased)
+    # Add negative prompt guidance (from art_gen_prompt.md)
     if "avoid" not in raw_prompt.lower():
-        raw_prompt = f"{raw_prompt} Avoid photorealistic rendering, smooth anti-aliasing, chibi proportions, 3D effects, blur, or overly detailed high-resolution art."
+        raw_prompt = f"{raw_prompt} Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, and oversized features."
 
     return raw_prompt
 
