@@ -1,6 +1,6 @@
 """
 Main image processing pipeline
-Orchestrates: download → background removal → Claude analysis → prompt generation → Imagen → compositing → upload
+Orchestrates: download → bg removal (input) → Claude analysis → prompt generation → Imagen → bg removal (pixel art) → compositing → upload
 """
 import time
 import uuid
@@ -27,14 +27,14 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
 
     Pipeline steps:
     1. Download input image from GCS
-    2. Remove background (rembg)
+    2. Remove background from input photo (rembg)
     3. Analyze image with Claude Haiku (vision)
     4. Generate Imagen prompt with Claude Haiku
     5. Generate pixel art with Google Imagen 3
-    6. Composite images (place mini-me on original)
-    7. Add watermark if free tier
-    8. Upload result to GCS
-    9. Return metadata
+    6. Remove background from generated pixel art (rembg)
+    7. Composite images (place mini-me on original)
+    8. Add watermark if free tier
+    9. Upload result to GCS
 
     Args:
         job_id: Job ID (UUID)
@@ -52,7 +52,7 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
             raise ValueError(f"Job {job_id} not found in Firestore")
 
         # STEP 1: Download input image from GCS
-        logger.info(f"📥 Step 1/8: Downloading input image")
+        logger.info(f"📥 Step 1/9: Downloading input image")
         input_blob_name = f"{job_id}.jpg"  # Assuming uploaded as JPG
         input_path = f"/tmp/{job_id}_input.jpg"
 
@@ -62,34 +62,38 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
             local_path=input_path
         )
 
-        # STEP 2: Remove background
-        logger.info(f"🎨 Step 2/8: Removing background")
+        # STEP 2: Remove background from input photo
+        logger.info(f"🎨 Step 2/9: Removing background from input photo")
         no_bg_path = await remove_background(input_path)
 
         # STEP 3: Analyze image with Claude
-        logger.info(f"🔍 Step 3/8: Analyzing image with Claude")
+        logger.info(f"🔍 Step 3/9: Analyzing image with Claude")
         analysis = await analyze_image_with_claude(no_bg_path)
 
         # STEP 4: Generate Imagen prompt
-        logger.info(f"✍️  Step 4/8: Generating Imagen prompt")
+        logger.info(f"✍️  Step 4/9: Generating Imagen prompt")
         prompt = await generate_imagen_prompt(analysis)
 
         # STEP 5: Generate pixel art with Imagen
-        logger.info(f"🎨 Step 5/8: Generating pixel art with Imagen")
+        logger.info(f"🎨 Step 5/9: Generating pixel art with Imagen")
         pixel_art_path = f"/tmp/{job_id}_pixel.png"
         await generate_pixel_art_with_imagen(prompt, pixel_art_path)
 
-        # STEP 6: Composite images
-        logger.info(f"🖼️  Step 6/8: Compositing images")
+        # STEP 6: Remove background from generated pixel art
+        logger.info(f"✂️  Step 6/9: Removing white background from pixel art")
+        pixel_art_nobg_path = await remove_background(pixel_art_path)
+
+        # STEP 7: Composite images
+        logger.info(f"🖼️  Step 7/9: Compositing images")
         composite_path = await composite_images(
             background_path=input_path,
-            foreground_path=pixel_art_path,
+            foreground_path=pixel_art_nobg_path,
             position=MINI_ME_POSITION,
             scale=MINI_ME_SCALE
         )
 
-        # STEP 7: Add watermark if free tier
-        logger.info(f"💧 Step 7/8: Checking watermark requirement")
+        # STEP 8: Add watermark if free tier
+        logger.info(f"💧 Step 8/9: Checking watermark requirement")
         user = await get_user_for_job(job_id)
 
         if user and user.get("subscription_tier") == "free":
@@ -98,8 +102,8 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         else:
             logger.info("Skipping watermark (paid tier)")
 
-        # STEP 8: Upload result to GCS
-        logger.info(f"📤 Step 8/8: Uploading result to GCS")
+        # STEP 9: Upload result to GCS
+        logger.info(f"📤 Step 9/9: Uploading result to GCS")
         result_blob_name = f"{job_id}.png"
         output_url = await upload_to_gcs(
             local_path=composite_path,
@@ -114,7 +118,7 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         metadata = {
             "detected_colors": analysis.get("primary_colors", []),
             "generated_prompt": prompt,
-            "style": "lego",
+            "style": "jrpg-pixel-art",
             "processing_time_ms": processing_time
         }
 
