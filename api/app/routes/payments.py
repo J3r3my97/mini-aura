@@ -71,14 +71,20 @@ async def create_checkout_session(
         if request.payment_type == "pro":
             price_id = STRIPE_PRO_PRICE_ID
             mode = "subscription"
-            success_url = f"{PAYMENT_SUCCESS_URL}?session_id={{CHECKOUT_SESSION_ID}}"
+            # Use custom success URL if provided, otherwise use config default
+            base_success_url = request.success_url or PAYMENT_SUCCESS_URL
+            success_url = f"{base_success_url}?session_id={{CHECKOUT_SESSION_ID}}"
         elif request.payment_type == "onetime":
             price_id = STRIPE_ONETIME_PRICE_ID
             mode = "payment"
             # For one-time, redirect directly to generation flow
-            success_url = f"{FRONTEND_URL}?session_id={{CHECKOUT_SESSION_ID}}&onetime=true"
+            base_frontend_url = request.success_url or FRONTEND_URL
+            success_url = f"{base_frontend_url}?session_id={{CHECKOUT_SESSION_ID}}&onetime=true"
         else:
             raise HTTPException(status_code=400, detail="Invalid payment type")
+
+        # Use custom cancel URL if provided, otherwise use config default
+        cancel_url = request.cancel_url or PAYMENT_CANCEL_URL
 
         # Create checkout session
         session_params = {
@@ -90,7 +96,7 @@ async def create_checkout_session(
             }],
             "mode": mode,
             "success_url": success_url,
-            "cancel_url": PAYMENT_CANCEL_URL,
+            "cancel_url": cancel_url,
             "metadata": {
                 "firebase_uid": user_id,
                 "payment_type": request.payment_type

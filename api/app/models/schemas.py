@@ -95,6 +95,14 @@ class CheckoutSessionRequest(BaseModel):
         ...,
         description="Type of payment: 'pro' for subscription, 'onetime' for single avatar"
     )
+    success_url: Optional[str] = Field(
+        None,
+        description="Custom success redirect URL (for Vercel preview deployments)"
+    )
+    cancel_url: Optional[str] = Field(
+        None,
+        description="Custom cancel redirect URL (for Vercel preview deployments)"
+    )
 
 
 class CheckoutSessionResponse(BaseModel):

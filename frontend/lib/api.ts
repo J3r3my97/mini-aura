@@ -140,12 +140,27 @@ class ApiClient {
   /**
    * Create Stripe checkout session
    * @param paymentType Type of payment: 'pro' or 'onetime'
+   * @param successUrl Optional success redirect URL (defaults to current origin + /payment/success)
+   * @param cancelUrl Optional cancel redirect URL (defaults to current origin + /payment/cancelled)
    * @returns Checkout session with redirect URL
    */
-  async createCheckoutSession(paymentType: 'pro' | 'onetime'): Promise<CheckoutSessionResponse> {
+  async createCheckoutSession(
+    paymentType: 'pro' | 'onetime',
+    successUrl?: string,
+    cancelUrl?: string
+  ): Promise<CheckoutSessionResponse> {
+    // Use current deployment URL if not provided (works with Vercel preview deployments)
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const finalSuccessUrl = successUrl || `${baseUrl}/payment/success`;
+    const finalCancelUrl = cancelUrl || `${baseUrl}/payment/cancelled`;
+
     const response = await this.client.post<CheckoutSessionResponse>(
       '/api/payments/create-checkout-session',
-      { payment_type: paymentType }
+      {
+        payment_type: paymentType,
+        success_url: finalSuccessUrl,
+        cancel_url: finalCancelUrl
+      }
     );
     return response.data;
   }
