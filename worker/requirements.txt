@@ -8,7 +8,8 @@ google-cloud-aiplatform==1.42.1
 
 # AI APIs
 anthropic==0.40.0
-openai==1.54.0
+openai==1.3.0
+httpx==0.25.2  # Compatible with both anthropic and openai
 
 # Image Processing
 Pillow==10.2.0
