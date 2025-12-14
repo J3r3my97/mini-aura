@@ -102,17 +102,42 @@ echo "✅ Firestore configured"
 echo ""
 echo "📬 Creating Pub/Sub topic and subscription..."
 
-# Create topic
+# Create main topic
 gcloud pubsub topics create generation-jobs
 
-# Create subscription (push to worker service)
+# Create dead letter topic for failed jobs
+gcloud pubsub topics create generation-jobs-dlq
+
+# Create dead letter subscription
+gcloud pubsub subscriptions create generation-jobs-dlq-sub \
+    --topic=generation-jobs-dlq
+
+# Create main subscription (push to worker service)
 # Note: We'll update the push endpoint after deploying the worker
 gcloud pubsub subscriptions create generation-jobs-sub \
     --topic=generation-jobs \
     --ack-deadline=300 \
-    --message-retention-duration=7d
+    --message-retention-duration=7d \
+    --max-delivery-attempts=5 \
+    --dead-letter-topic=generation-jobs-dlq
 
-echo "✅ Pub/Sub configured"
+# Grant Pub/Sub service account permissions for DLQ
+echo "🔑 Granting DLQ permissions..."
+
+# Get the Pub/Sub service account number
+PUBSUB_SA="service-$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')@gcp-sa-pubsub.iam.gserviceaccount.com"
+
+# Grant publisher role on DLQ topic
+gcloud pubsub topics add-iam-policy-binding generation-jobs-dlq \
+    --member="serviceAccount:$PUBSUB_SA" \
+    --role="roles/pubsub.publisher"
+
+# Grant subscriber role on main subscription
+gcloud pubsub subscriptions add-iam-policy-binding generation-jobs-sub \
+    --member="serviceAccount:$PUBSUB_SA" \
+    --role="roles/pubsub.subscriber"
+
+echo "✅ Pub/Sub configured with dead letter queue (max 5 retries)"
 
 # Create service account for the application
 echo ""
