@@ -53,9 +53,19 @@ export default function Home() {
         quality: 0.9,
       });
 
-      // Upload and generate
-      const response = await api.generateAvatar(compressedFile);
+      // Check for one-time session ID in URL (from payment success redirect)
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+      const isOnetime = urlParams.get('onetime');
+
+      // Upload and generate (include session_id if present)
+      const response = await api.generateAvatar(compressedFile, sessionId || undefined);
       console.log('Generation started:', response);
+
+      // Clear URL parameters after use
+      if (sessionId && isOnetime) {
+        window.history.replaceState({}, '', '/');
+      }
 
       // Start polling for status
       const finalJob = await api.pollJobStatus(
@@ -346,7 +356,7 @@ export default function Home() {
           <h2 className="section-title">Simple Pricing</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan, idx) => (
-              <PricingCard key={idx} {...plan} />
+              <PricingCard key={idx} {...plan} user={user} setShowSignIn={setShowSignIn} setError={setError} />
             ))}
           </div>
         </div>
@@ -409,7 +419,45 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
   );
 }
 
-function PricingCard({ name, price, period, features, featured, badge }: any) {
+function PricingCard({ name, price, period, features, featured, badge, user, setShowSignIn, setError }: any) {
+  const [loading, setLoading] = useState(false);
+
+  const handleGetStarted = async () => {
+    // Require authentication
+    if (!user) {
+      setShowSignIn(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Determine payment type
+      let paymentType: 'pro' | 'onetime';
+      if (name === 'Pro') {
+        paymentType = 'pro';
+      } else if (name === 'One-Time') {
+        paymentType = 'onetime';
+      } else {
+        // Free tier - just scroll to upload
+        document.querySelector('.upload-zone')?.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      // Create checkout session
+      const session = await api.createCheckoutSession(paymentType);
+
+      // Redirect to Stripe checkout
+      window.location.href = session.url;
+
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      setError(error.response?.data?.detail || 'Failed to start checkout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={`neu-card rounded-3xl p-12 text-center ${featured ? 'bg-gradient-to-br from-[#8b7fc7]/10 to-[#6b5eb0]/10' : ''}`}>
       {badge && (
@@ -430,8 +478,12 @@ function PricingCard({ name, price, period, features, featured, badge }: any) {
           </li>
         ))}
       </ul>
-      <button className={featured ? 'neu-button-accent w-full' : 'neu-button w-full'}>
-        {featured ? 'Start Free Trial' : 'Get Started'}
+      <button
+        onClick={handleGetStarted}
+        disabled={loading}
+        className={featured ? 'neu-button-accent w-full' : 'neu-button w-full'}
+      >
+        {loading ? 'Loading...' : (featured ? 'Start Free Trial' : 'Get Started')}
       </button>
     </div>
   );
@@ -446,9 +498,9 @@ const galleryImages = [
 ];
 
 const pricingPlans = [
-  { name: 'Free', price: '$0', period: 'month', features: ['3 avatars per month', 'Standard quality', 'Watermark included', 'Basic support'] },
-  { name: 'Pro', price: '$9', period: 'month', features: ['Unlimited avatars', 'HD quality exports', 'No watermarks', 'Priority processing', 'Commercial license'], featured: true, badge: 'Most Popular' },
-  { name: 'One-Time', price: '$3', period: 'avatar', features: ['Single HD avatar', 'No subscription', 'No watermark', 'Personal use only'] },
+  { name: 'Free', price: '$0', period: 'lifetime', features: ['5 avatars (lifetime)', 'Standard quality', 'Basic support'] },
+  { name: 'Pro', price: '$9', period: 'month', features: ['Unlimited avatars', 'HD quality exports', 'No watermarks', 'Priority processing', '7-day free trial', 'Commercial license'], featured: true, badge: 'Most Popular' },
+  { name: 'One-Time', price: '$3', period: 'avatar', features: ['Single HD avatar', 'Instant generation', 'No subscription', 'No watermark'] },
 ];
 
 const footerSections = [

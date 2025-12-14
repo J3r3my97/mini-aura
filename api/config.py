@@ -43,7 +43,16 @@ PUBSUB_TOPIC = "generation-jobs"
 
 # API Keys
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")
+STRIPE_ONETIME_PRICE_ID = os.getenv("STRIPE_ONETIME_PRICE_ID")
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
+
+# Frontend Configuration
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+PAYMENT_SUCCESS_URL = f"{FRONTEND_URL}/payment/success"
+PAYMENT_CANCEL_URL = f"{FRONTEND_URL}/payment/cancelled"
+CUSTOMER_PORTAL_RETURN_URL = f"{FRONTEND_URL}/account"
 
 # File Upload Configuration
 MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25MB (modern phone cameras can produce large files)

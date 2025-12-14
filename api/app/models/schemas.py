@@ -2,7 +2,7 @@
 Pydantic models for API requests and responses
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 from enum import Enum
 
@@ -86,3 +86,38 @@ class ErrorResponse(BaseModel):
     """Standard error response"""
     detail: str
     error_code: Optional[str] = None
+
+
+# Payment Models
+class CheckoutSessionRequest(BaseModel):
+    """Request to create checkout session"""
+    payment_type: Literal["pro", "onetime"] = Field(
+        ...,
+        description="Type of payment: 'pro' for subscription, 'onetime' for single avatar"
+    )
+    success_url: Optional[str] = Field(
+        None,
+        description="Custom success redirect URL (for Vercel preview deployments)"
+    )
+    cancel_url: Optional[str] = Field(
+        None,
+        description="Custom cancel redirect URL (for Vercel preview deployments)"
+    )
+
+
+class CheckoutSessionResponse(BaseModel):
+    """Response from creating checkout session"""
+    session_id: str
+    url: str
+
+
+class SubscriptionStatus(BaseModel):
+    """User's current subscription status"""
+    user_id: str
+    subscription_tier: str
+    subscription_status: Optional[str] = None
+    usage_count: int
+    usage_limit: int
+    trial_end: Optional[datetime] = None
+    current_period_end: Optional[datetime] = None
+    has_payment_method: bool
