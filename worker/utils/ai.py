@@ -372,27 +372,24 @@ async def generate_pixel_art_with_dalle(prompt: str, output_path: str) -> str:
     try:
         logger.info(f"Generating pixel art with DALL-E 3. Prompt: {prompt}")
 
-        # Generate image with DALL-E 3
+        # Generate image with DALL-E 3 using b64_json to avoid URL download issues
         response = openai_client.images.generate(
             model=DALLE_MODEL,
             prompt=prompt,
             size=DALLE_SIZE,
             quality=DALLE_QUALITY,
+            response_format="b64_json",
             n=1
         )
 
-        # Get the image URL
-        image_url = response.data[0].url
-        logger.info(f"DALL-E 3 generated image URL: {image_url}")
+        # Get the base64 image data
+        b64_image = response.data[0].b64_json
+        logger.info(f"DALL-E 3 generated image (base64)")
 
-        # Download the image
-        async with httpx.AsyncClient() as client:
-            img_response = await client.get(image_url)
-            img_response.raise_for_status()
-
-            # Save to output path
-            with open(output_path, 'wb') as f:
-                f.write(img_response.content)
+        # Decode and save to output path
+        image_data = base64.b64decode(b64_image)
+        with open(output_path, 'wb') as f:
+            f.write(image_data)
 
         logger.info(f"Pixel art generated and saved to {output_path}")
         return output_path
