@@ -9,8 +9,7 @@ import base64
 import json
 import logging
 import re
-import httpx
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from config import (
     CLAUDE_API_KEY,
     CLAUDE_MODEL,
@@ -192,39 +191,40 @@ async def generate_dalle_prompt(analysis: Dict[str, any]) -> str:
         response = claude_client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=PROMPT_GENERATION_MAX_TOKENS,
-            system="You are an expert at creating detailed prompts for DALL-E 3. You specialize in Everskies-style 2D pixel-art fashion doll avatars with clean outlines, soft shading, and high-fashion detail.",
+            system="You are an expert prompt engineer for OpenAI DALL-E 3. You specialize in producing clean, consistent, centered, full-body 2D pixel-art fashion doll avatars in the Everskies style. You strictly avoid realism, 3D rendering, anime styles, painterly effects, and background scenes. You prioritize composition, proportion accuracy, and fashion detail.",
             messages=[{
                 "role": "user",
-                "content": f"""Using this analysis, create a detailed DALL-E 3 prompt for a 2D pixel-art fashion doll avatar in the Everskies style.
+                "content": f"""Using this analysis, create a DALL-E 3 prompt following the exact template below.
 
 Analysis:
 {json.dumps(analysis, indent=2)}
 
-Your prompt should follow this structure (as a single flowing paragraph):
+Template (fill in the bracketed sections):
 
-"Create a 2D pixel-art fashion doll avatar in the Everskies style, front-facing stylized character with clean pixel outlines, soft shading, and high readability at small sizes.
+Create a single 2D pixel-art fashion doll avatar in the Everskies style, one person only, no duplicates, centered in frame.
 
-[SPECIFIC SKIN TONE from analysis], [DETAILED HAIR DESCRIPTION - color, length, style, texture, any parts/styling], [FACIAL HAIR if present - beard, mustache style], [FACIAL EXPRESSION], slightly chibi but proportional body.
+Front-facing stylized character with Everskies-style proportions: slightly oversized head, slim torso, long legs. True pixel-art style with visible pixel grid, crisp edges, clean outlines, soft flat shading, high readability at small sizes.
 
-Outfit: [VERY DETAILED CLOTHING - be specific about fit (oversized/fitted/baggy), textures (jersey/denim/cotton), layers (over/under), patterns (graphic/stripe/solid), and exact colors]. Include all garments from top to bottom.
-Accessories: [LIST ALL - necklaces, bags with strap position, glasses style, shoes, any other items].
+[SPECIFIC SKIN TONE], [DETAILED HAIR DESCRIPTION], [FACIAL HAIR IF PRESENT], [SIMPLE FACIAL EXPRESSION ONLY — neutral calm expression or smiling], slightly chibi but proportional body.
 
-Minimal lighting, flat colors, muted palette, no background or transparent background.
+Outfit: [VERY DETAILED CLOTHING — fit, fabric texture, layers, patterns, exact colors, top-to-bottom].
+Accessories: [ONLY WORN ITEMS — necklaces, bags with strap placement, glasses, shoes].
 
-Everskies avatar aesthetic, pixel art, fashion-focused, clean, modern, not realistic, not 3D."
+Neutral standing pose, arms relaxed at sides, feet slightly apart, full body visible from head to shoes. Symmetrical composition.
 
-CRITICAL RULES:
-- Use VERY specific physical descriptions: "medium-brown skin tone", "shoulder-length black dreadlocks parted at the front", "trimmed mustache and beard"
-- Clothing must have texture/fit details: "oversized black jersey-style shirt with subtle graphic texture", "very baggy black wide-leg pants"
-- Accessories with placement: "thin silver necklace", "dark cross-body strap across the chest"
-- Fashion-focused language emphasizing style, fit, and layers
-- "Minimal lighting, flat colors, muted palette" is REQUIRED
-- End with negative constraints about what to avoid
+Minimal lighting, flat colors, muted palette, no shadows, no background or transparent background.
 
-After your main prompt, add on a new line:
-"🚫 Avoid: photorealistic, 3D render, anime, cartoon network style, painterly, sketch, watercolor, hyper-detailed textures, dramatic lighting, background scene, realism"
+Fashion-focused, clean, modern. NOT realistic, NOT 3D, NOT anime, NOT painterly. No props, no handheld objects, no text, no logos.
 
-Return ONLY the prompt (main paragraph + negative line), no explanation."""
+🚫 Avoid: photorealism, realism, 3D render, anime, cartoon, painterly style, sketch, watercolor, gradients, dramatic lighting, backgrounds, scenes, props, phones, cameras, text, logos, multiple people, duplicates, cropped body
+
+CRITICAL:
+- Use EXACT skin tone from analysis
+- NO actions (no "looking at phone", "holding objects")
+- NO props or handheld items
+- Full body visible, centered, symmetrical
+
+Return ONLY the filled prompt, no explanation."""
             }]
         )
 
@@ -268,6 +268,10 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     Returns:
         Refined prompt with quality enhancements
     """
+    # CRITICAL: Ensure "single character only" is at the start to prevent duplicates
+    if "single" not in raw_prompt.lower() and "one person" not in raw_prompt.lower():
+        raw_prompt = f"Create a single 2D pixel-art fashion doll avatar, one person only. {raw_prompt}"
+
     # Extract critical elements
     colors = analysis.get("primary_colors", [])
 
@@ -314,9 +318,9 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
             elif check_keyword == "no glow":
                 raw_prompt = f"{raw_prompt} No glow effects or shadows."
 
-    # Add negative prompt guidance (from art_gen_prompt.md)
+    # Add negative prompt guidance with emphasis on no duplicates
     if "avoid" not in raw_prompt.lower():
-        raw_prompt = f"{raw_prompt} Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, and oversized features."
+        raw_prompt = f"{raw_prompt} Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, oversized features, multiple people, and duplicates."
 
     return raw_prompt
 
