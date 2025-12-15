@@ -12,7 +12,7 @@ import logging
 
 # Import pipeline
 from pipeline import run_pipeline
-from utils.firestore import update_job_status
+from utils.firestore import update_job_status, get_job
 from rembg import new_session
 
 # Configure logging
@@ -82,6 +82,21 @@ async def process_job(request: Request):
         # Decode base64 job_id
         job_id = base64.b64decode(data).decode('utf-8')
         logger.info(f"📨 Received job: {job_id}")
+
+        # Get current job status for idempotency check
+        job = await get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+        # Skip if already processing or completed (idempotency protection)
+        current_status = job.get("status")
+        if current_status in ["processing", "completed"]:
+            logger.info(f"⏭️  Job {job_id} already {current_status}, skipping (Pub/Sub retry detected)")
+            return {
+                "status": "ok",
+                "job_id": job_id,
+                "message": f"Job already {current_status}, skipped duplicate processing"
+            }
 
         # Update job status to "processing"
         await update_job_status(job_id, "processing")
