@@ -8,8 +8,9 @@ google-cloud-aiplatform==1.42.1
 
 # AI APIs
 anthropic==0.40.0
-openai==1.3.0
-httpx==0.25.2  # Compatible with both anthropic and openai
+openai>=2.13.0  # gpt-image-1 support requires 2.13+
+httpx>=0.25.2  # Compatible with both anthropic and openai
+requests>=2.31.0  # For downloading generated images
 
 # Image Processing
 Pillow==10.2.0

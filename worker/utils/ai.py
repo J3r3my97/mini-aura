@@ -1,8 +1,11 @@
 """
-AI utilities (Claude for analysis/prompts, DALL-E 3 for generation)
+AI utilities (Claude for analysis/prompts, GPT-image-1 for generation)
 """
 import anthropic
 from openai import OpenAI
+import requests
+import tempfile
+import os
 from google.cloud import aiplatform
 from vertexai.preview.vision_models import ImageGenerationModel
 import base64
@@ -400,4 +403,117 @@ async def generate_pixel_art_with_dalle(prompt: str, output_path: str) -> str:
 
     except Exception as e:
         logger.error(f"Error generating pixel art with DALL-E 3: {str(e)}")
+        raise
+
+
+# Fashion-first prompt for GPT-image-1 with reference
+GPT_REF_PROMPT = """
+Create an Everskies-style pixel fashion avatar based on the uploaded image.
+
+Priority: accurately match the outfit, fashion silhouette, and styling details from the reference image.
+Clothing accuracy takes priority over facial likeness.
+
+Preserve and translate into pixel-art:
+- Clothing type, fit, and proportions (oversized vs fitted, cropped vs long)
+- Layering (shirts over undershirts, jackets, accessories)
+- Color palette and fabric weight impression
+- Hairstyle, hair length, parting, and texture
+- Accessories (necklaces, bags, belts, hats, shoes)
+- Overall fashion vibe and aesthetic
+
+Style:
+- 2D pixel-art fashion doll
+- Sprite-like appearance similar to fashion game avatars
+- Clean black outlines
+- Flat colors with minimal soft shading
+- Pixel grid clearly visible (medium-size pixels, not micro-dithering)
+- High readability at small sizes (Everskies aesthetic)
+
+Body proportions:
+- Match official Everskies base doll proportions
+- Slightly oversized head
+- Long legs and emphasized pant silhouette
+
+Pose & framing:
+- Full-body, front-facing
+- Neutral standing pose
+- Arms relaxed at sides
+- Flat, straight-on view with no camera angle or perspective distortion
+- Transparent background
+
+Facial features are minimal and secondary to fashion; preserve skin tone and facial hair only.
+
+Do NOT add new clothing or accessories.
+Do NOT change outfit colors or proportions.
+Avoid smooth gradients, painterly shading, semi-realistic pixel filtering.
+"""
+
+
+async def generate_pixel_art_with_gpt_reference(reference_image_path: str, output_path: str) -> str:
+    """
+    Generate pixel art with GPT-image-1 using a reference image.
+    This approach is more accurate as the model can see the source image directly.
+
+    Args:
+        reference_image_path: Path to source/reference image
+        output_path: Path to save generated image
+
+    Returns:
+        Path to generated image
+    """
+    try:
+        logger.info(f"Generating pixel art with GPT-image-1 + reference. Source: {reference_image_path}")
+
+        # Create temp file for the reference image (ensures proper format)
+        temp_path = tempfile.mktemp(suffix=".png")
+
+        # Read and potentially resize the image
+        from PIL import Image
+        img = Image.open(reference_image_path)
+
+        # Resize if too large (max 4MB for API)
+        max_size = 4 * 1024 * 1024
+        img.save(temp_path, "PNG")
+
+        if os.path.getsize(temp_path) > max_size:
+            # Resize to fit
+            scale = (max_size / os.path.getsize(temp_path)) ** 0.5
+            new_size = (int(img.width * scale), int(img.height * scale))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+            img.save(temp_path, "PNG", optimize=True)
+            logger.info(f"Resized image to {new_size} for API limits")
+
+        # Use images.edit() with the reference image
+        with open(temp_path, 'rb') as img_file:
+            response = openai_client.images.edit(
+                model="gpt-image-1",
+                prompt=GPT_REF_PROMPT,
+                image=img_file,
+                size="1024x1024"
+            )
+
+        # Handle response - could be URL or b64_json
+        result_data = response.data[0]
+        if hasattr(result_data, 'b64_json') and result_data.b64_json:
+            image_bytes = base64.b64decode(result_data.b64_json)
+            with open(output_path, 'wb') as f:
+                f.write(image_bytes)
+        elif hasattr(result_data, 'url') and result_data.url:
+            img_response = requests.get(result_data.url)
+            img_response.raise_for_status()
+            with open(output_path, 'wb') as f:
+                f.write(img_response.content)
+        else:
+            raise ValueError(f"No image data in response: {result_data}")
+
+        logger.info(f"Pixel art generated and saved to {output_path}")
+
+        # Cleanup temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error generating pixel art with GPT-image-1: {str(e)}")
         raise

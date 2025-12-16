@@ -1,6 +1,6 @@
 """
 Main image processing pipeline
-Orchestrates: download → bg removal (input) → Claude analysis → prompt generation → DALL-E 3 → bg removal (pixel art) → compositing → upload
+Orchestrates: download → GPT-image-1 with reference → isolation → compositing → upload
 """
 import time
 import uuid
@@ -16,7 +16,7 @@ from config import (
 from utils.firestore import update_job_status, get_job, get_user_for_job
 from utils.gcs import download_from_gcs, upload_to_gcs
 from utils.image_processing import remove_background, isolate_largest_character, composite_images, add_watermark
-from utils.ai import analyze_image_with_claude, generate_dalle_prompt, generate_pixel_art_with_dalle
+from utils.ai import generate_pixel_art_with_gpt_reference
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +27,11 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
 
     Pipeline steps:
     1. Download input image from GCS
-    2. Remove background from input photo (rembg)
-    3. Analyze image with Claude Haiku (vision)
-    4. Generate DALL-E 3 prompt with Claude Haiku
-    5. Generate pixel art with OpenAI DALL-E 3
-    6. Remove background from generated pixel art (rembg)
-    7. Composite images (place mini-me on original)
-    8. Add watermark if free tier
-    9. Upload result to GCS
+    2. Generate pixel art with GPT-image-1 (uses source as reference)
+    3. Isolate largest character (removes duplicates + background)
+    4. Composite images (place mini-me on original)
+    5. Add watermark if free tier
+    6. Upload result to GCS
 
     Args:
         job_id: Job ID (UUID)
@@ -52,7 +49,7 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
             raise ValueError(f"Job {job_id} not found in Firestore")
 
         # STEP 1: Download input image from GCS
-        logger.info(f"📥 Step 1/9: Downloading input image")
+        logger.info(f"📥 Step 1/6: Downloading input image")
         input_blob_name = f"{job_id}.jpg"  # Assuming uploaded as JPG
         input_path = f"/tmp/{job_id}_input.jpg"
 
@@ -62,29 +59,18 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
             local_path=input_path
         )
 
-        # STEP 2: Remove background from input photo
-        logger.info(f"🎨 Step 2/9: Removing background from input photo")
-        no_bg_path = await remove_background(input_path)
-
-        # STEP 3: Analyze image with Claude
-        logger.info(f"🔍 Step 3/9: Analyzing image with Claude")
-        analysis = await analyze_image_with_claude(no_bg_path)
-
-        # STEP 4: Generate DALL-E 3 prompt
-        logger.info(f"✍️  Step 4/9: Generating DALL-E 3 prompt")
-        prompt = await generate_dalle_prompt(analysis)
-
-        # STEP 5: Generate pixel art with DALL-E 3
-        logger.info(f"🎨 Step 5/9: Generating pixel art with DALL-E 3")
+        # STEP 2: Generate pixel art with GPT-image-1 (uses source as reference)
+        # GPT-image-1 sees the actual image, so no need for Claude analysis/prompt generation
+        logger.info(f"🎨 Step 2/6: Generating pixel art with GPT-image-1")
         pixel_art_path = f"/tmp/{job_id}_pixel.png"
-        await generate_pixel_art_with_dalle(prompt, pixel_art_path)
+        await generate_pixel_art_with_gpt_reference(input_path, pixel_art_path)
 
-        # STEP 6: Isolate largest character (removes duplicates + background)
-        logger.info(f"✂️  Step 6/9: Isolating largest character (removes duplicates)")
+        # STEP 3: Isolate largest character (removes duplicates + background)
+        logger.info(f"✂️  Step 3/6: Isolating largest character")
         pixel_art_isolated_path = await isolate_largest_character(pixel_art_path)
 
-        # STEP 7: Composite images
-        logger.info(f"🖼️  Step 7/9: Compositing images")
+        # STEP 4: Composite images
+        logger.info(f"🖼️  Step 4/6: Compositing images")
         composite_path = await composite_images(
             background_path=input_path,
             foreground_path=pixel_art_isolated_path,
@@ -92,8 +78,8 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
             scale=MINI_ME_SCALE
         )
 
-        # STEP 8: Add watermark if free tier
-        logger.info(f"💧 Step 8/9: Checking watermark requirement")
+        # STEP 5: Add watermark if free tier
+        logger.info(f"💧 Step 5/6: Checking watermark requirement")
         user = await get_user_for_job(job_id)
 
         if user and user.get("subscription_tier") == "free":
@@ -102,8 +88,8 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         else:
             logger.info("Skipping watermark (paid tier)")
 
-        # STEP 9: Upload result to GCS
-        logger.info(f"📤 Step 9/9: Uploading result to GCS")
+        # STEP 6: Upload result to GCS
+        logger.info(f"📤 Step 6/6: Uploading result to GCS")
         result_blob_name = f"{job_id}.png"
         output_url = await upload_to_gcs(
             local_path=composite_path,
@@ -116,9 +102,8 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
 
         # Prepare metadata
         metadata = {
-            "detected_colors": analysis.get("primary_colors", []),
-            "generated_prompt": prompt,
-            "style": "jrpg-pixel-art",
+            "style": "everskies-pixel-art",
+            "model": "gpt-image-1",
             "processing_time_ms": processing_time
         }
 
