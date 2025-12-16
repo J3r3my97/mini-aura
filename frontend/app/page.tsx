@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 import SignUpModal from '@/components/auth/SignUpModal';
+import AvatarEditor from '@/components/AvatarEditor';
 import api, { JobResponse } from '@/lib/api';
 import { compressImage, validateImageFile } from '@/lib/imageCompression';
 
@@ -20,6 +21,10 @@ export default function Home() {
   const [currentJob, setCurrentJob] = useState<JobResponse | null>(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Editor state
+  const [showEditor, setShowEditor] = useState(false);
+  const [customizedImage, setCustomizedImage] = useState<string | null>(null);
 
   const handleFileUpload = async (file: File) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -111,16 +116,17 @@ export default function Home() {
     setError('');
   };
 
-  const handleDownload = async () => {
-    if (!currentJob?.output_image_url) return;
+  const handleDownload = async (imageUrl?: string) => {
+    const urlToDownload = imageUrl || customizedImage || currentJob?.output_image_url;
+    if (!urlToDownload) return;
 
     try {
-      const response = await fetch(currentJob.output_image_url);
+      const response = await fetch(urlToDownload);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mini-me-${currentJob.job_id}.png`;
+      a.download = `mini-me-${currentJob?.job_id || 'customized'}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -128,6 +134,14 @@ export default function Home() {
     } catch (err) {
       console.error('Download failed:', err);
     }
+  };
+
+  const handleSaveCustomization = (blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    setCustomizedImage(url);
+    setShowEditor(false);
+    // Auto-download
+    handleDownload(url);
   };
 
   return (
@@ -247,7 +261,7 @@ export default function Home() {
             <div className="mt-12">
               <div className="result-image mx-auto max-w-md">
                 <Image
-                  src={currentJob.output_image_url}
+                  src={customizedImage || currentJob.output_image_url}
                   alt="Your pixel art avatar"
                   width={400}
                   height={400}
@@ -256,10 +270,12 @@ export default function Home() {
                 />
               </div>
               <div className="flex gap-4 justify-center mt-8 flex-wrap">
-                <button onClick={handleDownload} className="neu-button-accent">
+                <button onClick={() => setShowEditor(true)} className="neu-button-accent">
+                  Customize Position
+                </button>
+                <button onClick={() => handleDownload()} className="neu-button">
                   Download
                 </button>
-                <button className="neu-button">Share</button>
                 <button onClick={handleReset} className="neu-button">
                   Create Another
                 </button>
@@ -404,6 +420,16 @@ export default function Home() {
           setShowSignIn(true);
         }}
       />
+
+      {/* Avatar Editor */}
+      {showEditor && currentJob?.input_image_url && currentJob?.output_image_url && (
+        <AvatarEditor
+          originalImageUrl={currentJob.input_image_url}
+          avatarImageUrl={currentJob.output_image_url}
+          onSave={handleSaveCustomization}
+          onCancel={() => setShowEditor(false)}
+        />
+      )}
     </div>
   );
 }
