@@ -45,7 +45,7 @@ steps:
       - '--concurrency=1'  # Process one job at a time per instance
       - '--timeout=600s'  # 10 minutes max per request
       - '--set-env-vars=PROJECT_ID=$PROJECT_ID'
-      - '--set-secrets=CLAUDE_API_KEY=CLAUDE_API_KEY:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=mini-me-storage-key:latest'
+      - '--set-secrets=CLAUDE_API_KEY=CLAUDE_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=mini-me-storage-key:latest'
       - '--service-account=mini-me-worker@$PROJECT_ID.iam.gserviceaccount.com'
 
 # Store images in Artifact Registry

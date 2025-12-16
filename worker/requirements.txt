@@ -6,13 +6,17 @@ google-cloud-firestore==2.14.0
 google-cloud-storage==2.14.0
 google-cloud-aiplatform==1.42.1
 
-# Anthropic Claude
+# AI APIs
 anthropic==0.40.0
+openai>=2.13.0  # gpt-image-1 support requires 2.13+
+httpx>=0.25.2  # Compatible with both anthropic and openai
+requests>=2.31.0  # For downloading generated images
 
 # Image Processing
 Pillow==10.2.0
 rembg==2.0.56
 numpy==1.26.3
+scipy==1.11.4
 opencv-python-headless==4.9.0.80
 
 # Utilities

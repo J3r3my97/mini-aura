@@ -1,8 +1,10 @@
 """
-Image processing utilities (background removal, compositing, watermark)
+Image processing utilities (background removal, compositing, watermark, isolation)
 """
 from PIL import Image, ImageDraw, ImageFont
 from rembg import remove
+from scipy import ndimage
+import numpy as np
 from typing import Tuple
 import logging
 import os
@@ -38,6 +40,104 @@ async def remove_background(input_path: str) -> str:
 
     except Exception as e:
         logger.error(f"Error removing background: {str(e)}")
+        raise
+
+
+async def isolate_largest_character(input_path: str) -> str:
+    """
+    Isolate the largest character from an image with multiple figures.
+    Uses background removal + connected component analysis to handle
+    DALL-E 3's tendency to generate character sheets with duplicates.
+
+    Args:
+        input_path: Path to generated image (may have multiple characters)
+
+    Returns:
+        Path to output image with only the largest character
+    """
+    try:
+        logger.info(f"Isolating largest character from {input_path}")
+
+        img = Image.open(input_path)
+        needs_bg_removal = False
+
+        # Check if already has transparency
+        if img.mode != 'RGBA':
+            needs_bg_removal = True
+        else:
+            alpha = img.getchannel('A')
+            min_alpha, max_alpha = alpha.getextrema()
+            if min_alpha == max_alpha == 255:
+                needs_bg_removal = True
+
+        # Remove background if needed
+        if needs_bg_removal:
+            logger.info("Removing background for isolation analysis...")
+            img = remove(img)
+
+        # Ensure RGBA
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+
+        # Convert to numpy array
+        arr = np.array(img)
+
+        # Get alpha channel mask (non-transparent pixels)
+        alpha = arr[:, :, 3]
+        mask = alpha > 128
+
+        # Label connected components
+        labeled, num_features = ndimage.label(mask)
+
+        if num_features == 0:
+            logger.warning("No characters found in image, returning original")
+            return input_path
+
+        if num_features == 1:
+            logger.info("Single character detected, no isolation needed")
+            # Still crop to bounds for cleaner output
+        else:
+            logger.info(f"Found {num_features} separate regions, keeping largest")
+
+        # Find the largest component
+        component_sizes = ndimage.sum(mask, labeled, range(1, num_features + 1))
+        largest_idx = np.argmax(component_sizes) + 1
+
+        # Create mask for only the largest component
+        largest_mask = labeled == largest_idx
+
+        # Find bounding box of largest component
+        rows = np.any(largest_mask, axis=1)
+        cols = np.any(largest_mask, axis=0)
+        y_indices = np.where(rows)[0]
+        x_indices = np.where(cols)[0]
+        y_min, y_max = y_indices[0], y_indices[-1]
+        x_min, x_max = x_indices[0], x_indices[-1]
+
+        # Add padding (5% of dimensions)
+        pad_x = int((x_max - x_min) * 0.05)
+        pad_y = int((y_max - y_min) * 0.05)
+        x_min = max(0, x_min - pad_x)
+        x_max = min(img.width, x_max + pad_x + 1)
+        y_min = max(0, y_min - pad_y)
+        y_max = min(img.height, y_max + pad_y + 1)
+
+        # Mask out everything except the largest component
+        masked_arr = arr.copy()
+        masked_arr[~largest_mask] = [0, 0, 0, 0]
+
+        # Crop to the bounding box
+        cropped = Image.fromarray(masked_arr[y_min:y_max, x_min:x_max])
+
+        # Save
+        output_path = input_path.replace("_pixel", "_isolated")
+        cropped.save(output_path, "PNG")
+
+        logger.info(f"Isolated character saved to {output_path} ({cropped.width}x{cropped.height}px)")
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error isolating character: {str(e)}")
         raise
 
 

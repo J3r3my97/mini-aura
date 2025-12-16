@@ -22,9 +22,16 @@ CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 if not CLAUDE_API_KEY:
     raise ValueError("CLAUDE_API_KEY environment variable not set")
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable not set")
+
 # AI Model Configuration
 CLAUDE_MODEL = "claude-haiku-4-5"
-IMAGEN_MODEL = "imagen-3.0-generate-001"
+IMAGEN_MODEL = "imagen-3.0-generate-001"  # Deprecated - keeping for reference
+DALLE_MODEL = "dall-e-3"
+DALLE_SIZE = "1024x1024"  # DALL-E 3 supports: 1024x1024, 1792x1024, 1024x1792
+DALLE_QUALITY = "hd"  # "standard" or "hd" (hd costs 2x) - use "hd" to match ChatGPT quality
 
 # Image Processing Configuration
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB

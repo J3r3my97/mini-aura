@@ -1,17 +1,25 @@
 """
-AI utilities (Claude for analysis/prompts, Imagen for generation)
+AI utilities (Claude for analysis/prompts, GPT-image-1 for generation)
 """
 import anthropic
+from openai import OpenAI
+import requests
+import tempfile
+import os
 from google.cloud import aiplatform
 from vertexai.preview.vision_models import ImageGenerationModel
 import base64
 import json
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from config import (
     CLAUDE_API_KEY,
     CLAUDE_MODEL,
+    OPENAI_API_KEY,
+    DALLE_MODEL,
+    DALLE_SIZE,
+    DALLE_QUALITY,
     IMAGEN_MODEL,
     REGION,
     PROJECT_ID,
@@ -24,6 +32,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize Claude client
 claude_client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
+
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Initialize Vertex AI
 aiplatform.init(project=PROJECT_ID, location=REGION)
@@ -167,70 +178,56 @@ Only return valid JSON, no explanation."""
         raise
 
 
-async def generate_imagen_prompt(analysis: Dict[str, any]) -> str:
+async def generate_dalle_prompt(analysis: Dict[str, any]) -> str:
     """
-    Generate optimized Imagen prompt from Claude's image analysis
+    Generate optimized DALL-E 3 prompt from Claude's image analysis
 
     Args:
         analysis: Enhanced image analysis dictionary from Claude
 
     Returns:
-        Detailed prompt string for Imagen (100-150 words)
+        Detailed prompt string for DALL-E 3 with Everskies style focus
     """
     try:
-        logger.info(f"Generating Imagen prompt from analysis: {analysis}")
+        logger.info(f"Generating DALL-E 3 prompt from analysis: {analysis}")
 
         response = claude_client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=PROMPT_GENERATION_MAX_TOKENS,
-            system="You are an expert at creating detailed, optimized prompts for Google's Imagen AI image generator. You specialize in everskies-style pixel art character avatars with detailed fashion and clothing.",
+            system="You are an expert prompt engineer for OpenAI DALL-E 3. You specialize in producing clean, consistent, centered, full-body 2D pixel-art fashion doll avatars in the Everskies style. You strictly avoid realism, 3D rendering, anime styles, painterly effects, and background scenes. You prioritize composition, proportion accuracy, and fashion detail.",
             messages=[{
                 "role": "user",
-                "content": f"""Convert this detailed analysis into an optimized Google Imagen prompt for high-quality everskies-style pixel art generation.
+                "content": f"""Using this analysis, create a DALL-E 3 prompt following the exact template below.
 
 Analysis:
 {json.dumps(analysis, indent=2)}
 
-Create a prompt for a full-body pixel art character sprite in everskies style following these guidelines:
+Template (fill in the bracketed sections):
 
-STRUCTURE YOUR PROMPT IN THIS ORDER:
-1. Character Overview: Accurate description matching the person's actual features (skin tone, expression, body type)
-2. Physical Accuracy: CRITICAL - Match the person's real features, hair, and distinguishing characteristics exactly
-3. Full Body Sprite: "full body character", "standing pose", "complete figure from head to toe"
-4. Proportions: "slightly stylized proportions" (not realistic, not chibi - balanced middle ground)
-5. DETAILED CLOTHING: VERY IMPORTANT - Describe every clothing item in detail:
-   - Specific garment types (hoodie, jeans, jacket, dress, shirt, etc.)
-   - Clothing colors with hex values
-   - Patterns, textures, designs on clothing (stripes, logos, prints, etc.)
-   - Fit and style (oversized, fitted, cropped, etc.)
-   - Layering details (jacket over shirt, etc.)
-6. Accessories & Details: All accessories mentioned (glasses style, jewelry, hat type, shoes, bags, etc.)
-7. Hair Details: Color, length, style, texture
-8. Style Keywords: CRITICAL - Include "Everskies pixel avatar style", "retro pixel art", "clean outlines", "soft shading", "simple but expressive details"
-9. Pixel Specifications: "64-128 pixel height character", "visibly pixelated", "low-resolution sprite", "chunky visible pixel blocks"
-10. Pose: "neutral standing pose", "arms relaxed at sides", "front-facing"
-11. Color & Quality: "limited color palette", "classic Everskies proportions", "vibrant but not oversaturated"
-12. Technical Requirements: "pure white background", "centered full-body sprite", "no glow", "no shadows"
-13. Negative Constraints: CRITICAL - Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, oversized features
+Create a single 2D pixel-art fashion doll avatar in the Everskies style, one person only, no duplicates, centered in frame.
 
-REQUIREMENTS:
-- CRITICAL: Match person's EXACT features - hairstyle, hair color, facial hair, skin tone, outfit, accessories, overall style
-- CRITICAL: DETAILED CLOTHING - every garment, pattern, texture, fit, layering (silhouette and colors must match)
-- CRITICAL: "Everskies pixel avatar style" with "retro pixel art", "clean outlines", "soft shading"
-- Character specs: "64-128 pixel height", "visibly pixelated", "low-resolution sprite", not smooth/painted
-- Pose: "neutral standing pose", "arms relaxed at sides", "front-facing"
-- Use specific hex color values for ALL clothing items
-- Include ALL distinguishing features and accessories from analysis
-- "Limited color palette" and "classic Everskies proportions" (slightly stylized but recognizable)
-- Full body sprite (head to toe) including shoes
-- "Pure white background", "no glow", "no shadows" - clean sprite only
-- NEVER use: anime, chibi, photorealism, 3D, smooth gradients, blur, oversized features
-- EMPHASIZE: "simple but expressive details", chunky visible pixels, clearly pixelated aesthetic
-- Keep as single flowing paragraph
-- Target ~150-200 words for detailed clothing descriptions
-- Match the person's clothing silhouette and colors while remaining clearly pixelated
+Front-facing stylized character with Everskies-style proportions: slightly oversized head, slim torso, long legs. True pixel-art style with visible pixel grid, crisp edges, clean outlines, soft flat shading, high readability at small sizes.
 
-Return ONLY the prompt text, no explanation or formatting."""
+[SPECIFIC SKIN TONE], [DETAILED HAIR DESCRIPTION], [FACIAL HAIR IF PRESENT], [SIMPLE FACIAL EXPRESSION ONLY — neutral calm expression or smiling], slightly chibi but proportional body.
+
+Outfit: [VERY DETAILED CLOTHING — fit, fabric texture, layers, patterns, exact colors, top-to-bottom].
+Accessories: [ONLY WORN ITEMS — necklaces, bags with strap placement, glasses, shoes].
+
+Neutral standing pose, arms relaxed at sides, feet slightly apart, full body visible from head to shoes. Symmetrical composition.
+
+Minimal lighting, flat colors, muted palette, no shadows, no background or transparent background.
+
+Fashion-focused, clean, modern. NOT realistic, NOT 3D, NOT anime, NOT painterly. No props, no handheld objects, no text, no logos.
+
+🚫 Avoid: photorealism, realism, 3D render, anime, cartoon, painterly style, sketch, watercolor, gradients, dramatic lighting, backgrounds, scenes, props, phones, cameras, text, logos, multiple people, duplicates, cropped body
+
+CRITICAL:
+- Use EXACT skin tone from analysis
+- NO actions (no "looking at phone", "holding objects")
+- NO props or handheld items
+- Full body visible, centered, symmetrical
+
+Return ONLY the filled prompt, no explanation."""
             }]
         )
 
@@ -259,7 +256,7 @@ Return ONLY the prompt text, no explanation or formatting."""
         return raw_prompt
 
     except Exception as e:
-        logger.error(f"Error generating Imagen prompt: {str(e)}")
+        logger.error(f"Error generating DALL-E 3 prompt: {str(e)}")
         raise
 
 
@@ -274,6 +271,10 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
     Returns:
         Refined prompt with quality enhancements
     """
+    # CRITICAL: Ensure "single character only" is at the start to prevent duplicates
+    if "single" not in raw_prompt.lower() and "one person" not in raw_prompt.lower():
+        raw_prompt = f"Create a single 2D pixel-art fashion doll avatar, one person only. {raw_prompt}"
+
     # Extract critical elements
     colors = analysis.get("primary_colors", [])
 
@@ -320,9 +321,9 @@ def refine_imagen_prompt(raw_prompt: str, analysis: dict) -> str:
             elif check_keyword == "no glow":
                 raw_prompt = f"{raw_prompt} No glow effects or shadows."
 
-    # Add negative prompt guidance (from art_gen_prompt.md)
+    # Add negative prompt guidance with emphasis on no duplicates
     if "avoid" not in raw_prompt.lower():
-        raw_prompt = f"{raw_prompt} Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, and oversized features."
+        raw_prompt = f"{raw_prompt} Avoid anime, chibi, photorealism, 3D rendering, smooth/painted look, blur, anti-aliasing, oversized features, multiple people, and duplicates."
 
     return raw_prompt
 
@@ -361,4 +362,158 @@ async def generate_pixel_art_with_imagen(prompt: str, output_path: str) -> str:
 
     except Exception as e:
         logger.error(f"Error generating pixel art with Imagen: {str(e)}")
+        raise
+
+
+async def generate_pixel_art_with_dalle(prompt: str, output_path: str) -> str:
+    """
+    Generate pixel art with OpenAI DALL-E 3
+
+    Args:
+        prompt: Text prompt for image generation
+        output_path: Path to save generated image
+
+    Returns:
+        Path to generated image
+    """
+    try:
+        logger.info(f"Generating pixel art with DALL-E 3. Prompt: {prompt}")
+
+        # Generate image with DALL-E 3 using b64_json to avoid URL download issues
+        response = openai_client.images.generate(
+            model=DALLE_MODEL,
+            prompt=prompt,
+            size=DALLE_SIZE,
+            quality=DALLE_QUALITY,
+            response_format="b64_json",
+            n=1
+        )
+
+        # Get the base64 image data
+        b64_image = response.data[0].b64_json
+        logger.info(f"DALL-E 3 generated image (base64)")
+
+        # Decode and save to output path
+        image_data = base64.b64decode(b64_image)
+        with open(output_path, 'wb') as f:
+            f.write(image_data)
+
+        logger.info(f"Pixel art generated and saved to {output_path}")
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error generating pixel art with DALL-E 3: {str(e)}")
+        raise
+
+
+# Fashion-first prompt for GPT-image-1 with reference
+GPT_REF_PROMPT = """
+Create an Everskies-style pixel fashion avatar based on the uploaded image.
+
+Priority: accurately match the outfit, fashion silhouette, and styling details from the reference image.
+Clothing accuracy takes priority over facial likeness.
+
+Preserve and translate into pixel-art:
+- Clothing type, fit, and proportions (oversized vs fitted, cropped vs long)
+- Layering (shirts over undershirts, jackets, accessories)
+- Color palette and fabric weight impression
+- Hairstyle, hair length, parting, and texture
+- Accessories (necklaces, bags, belts, hats, shoes)
+- Overall fashion vibe and aesthetic
+
+Style:
+- 2D pixel-art fashion doll
+- Sprite-like appearance similar to fashion game avatars
+- Clean black outlines
+- Flat colors with minimal soft shading
+- Pixel grid clearly visible (medium-size pixels, not micro-dithering)
+- High readability at small sizes (Everskies aesthetic)
+
+Body proportions:
+- Match official Everskies base doll proportions
+- Slightly oversized head
+- Long legs and emphasized pant silhouette
+
+Pose & framing:
+- Full-body, front-facing
+- Neutral standing pose
+- Arms relaxed at sides
+- Flat, straight-on view with no camera angle or perspective distortion
+- Transparent background
+
+Facial features are minimal and secondary to fashion; preserve skin tone and facial hair only.
+
+Do NOT add new clothing or accessories.
+Do NOT change outfit colors or proportions.
+Avoid smooth gradients, painterly shading, semi-realistic pixel filtering.
+"""
+
+
+async def generate_pixel_art_with_gpt_reference(reference_image_path: str, output_path: str) -> str:
+    """
+    Generate pixel art with GPT-image-1 using a reference image.
+    This approach is more accurate as the model can see the source image directly.
+
+    Args:
+        reference_image_path: Path to source/reference image
+        output_path: Path to save generated image
+
+    Returns:
+        Path to generated image
+    """
+    try:
+        logger.info(f"Generating pixel art with GPT-image-1 + reference. Source: {reference_image_path}")
+
+        # Create temp file for the reference image (ensures proper format)
+        temp_path = tempfile.mktemp(suffix=".png")
+
+        # Read and potentially resize the image
+        from PIL import Image
+        img = Image.open(reference_image_path)
+
+        # Resize if too large (max 4MB for API)
+        max_size = 4 * 1024 * 1024
+        img.save(temp_path, "PNG")
+
+        if os.path.getsize(temp_path) > max_size:
+            # Resize to fit
+            scale = (max_size / os.path.getsize(temp_path)) ** 0.5
+            new_size = (int(img.width * scale), int(img.height * scale))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+            img.save(temp_path, "PNG", optimize=True)
+            logger.info(f"Resized image to {new_size} for API limits")
+
+        # Use images.edit() with the reference image
+        with open(temp_path, 'rb') as img_file:
+            response = openai_client.images.edit(
+                model="gpt-image-1",
+                prompt=GPT_REF_PROMPT,
+                image=img_file,
+                size="1024x1024"
+            )
+
+        # Handle response - could be URL or b64_json
+        result_data = response.data[0]
+        if hasattr(result_data, 'b64_json') and result_data.b64_json:
+            image_bytes = base64.b64decode(result_data.b64_json)
+            with open(output_path, 'wb') as f:
+                f.write(image_bytes)
+        elif hasattr(result_data, 'url') and result_data.url:
+            img_response = requests.get(result_data.url)
+            img_response.raise_for_status()
+            with open(output_path, 'wb') as f:
+                f.write(img_response.content)
+        else:
+            raise ValueError(f"No image data in response: {result_data}")
+
+        logger.info(f"Pixel art generated and saved to {output_path}")
+
+        # Cleanup temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error generating pixel art with GPT-image-1: {str(e)}")
         raise
