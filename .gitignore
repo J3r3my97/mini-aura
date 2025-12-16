@@ -52,3 +52,4 @@ service-account*.json
 .dockerignore
 firebase_config.js
 /avatar_sample
+/prompt_lab

@@ -15,7 +15,7 @@ from config import (
 )
 from utils.firestore import update_job_status, get_job, get_user_for_job
 from utils.gcs import download_from_gcs, upload_to_gcs
-from utils.image_processing import remove_background, composite_images, add_watermark
+from utils.image_processing import remove_background, isolate_largest_character, composite_images, add_watermark
 from utils.ai import analyze_image_with_claude, generate_dalle_prompt, generate_pixel_art_with_dalle
 
 logger = logging.getLogger(__name__)
@@ -79,15 +79,15 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         pixel_art_path = f"/tmp/{job_id}_pixel.png"
         await generate_pixel_art_with_dalle(prompt, pixel_art_path)
 
-        # STEP 6: Remove background from generated pixel art
-        logger.info(f"✂️  Step 6/9: Removing white background from pixel art")
-        pixel_art_nobg_path = await remove_background(pixel_art_path)
+        # STEP 6: Isolate largest character (removes duplicates + background)
+        logger.info(f"✂️  Step 6/9: Isolating largest character (removes duplicates)")
+        pixel_art_isolated_path = await isolate_largest_character(pixel_art_path)
 
         # STEP 7: Composite images
         logger.info(f"🖼️  Step 7/9: Compositing images")
         composite_path = await composite_images(
             background_path=input_path,
-            foreground_path=pixel_art_nobg_path,
+            foreground_path=pixel_art_isolated_path,
             position=MINI_ME_POSITION,
             scale=MINI_ME_SCALE
         )

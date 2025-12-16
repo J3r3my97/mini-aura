@@ -15,6 +15,7 @@ httpx==0.25.2  # Compatible with both anthropic and openai
 Pillow==10.2.0
 rembg==2.0.56
 numpy==1.26.3
+scipy==1.11.4
 opencv-python-headless==4.9.0.80
 
 # Utilities
