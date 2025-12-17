@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Moveable from 'react-moveable';
+import dynamic from 'next/dynamic';
+
+// Dynamic import for client-side only library
+const Moveable = dynamic(() => import('react-moveable'), {
+  ssr: false,
+  loading: () => null,
+});
 
 interface AvatarEditorProps {
   originalImageUrl: string;

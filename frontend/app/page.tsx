@@ -270,7 +270,19 @@ export default function Home() {
                 />
               </div>
               <div className="flex gap-4 justify-center mt-8 flex-wrap">
-                <button onClick={() => setShowEditor(true)} className="neu-button-accent">
+                <button
+                  onClick={() => {
+                    console.log('Customize clicked!');
+                    console.log('Avatar URL:', currentJob?.metadata?.avatar_url);
+                    console.log('Input URL:', currentJob?.input_image_url);
+                    if (!currentJob?.metadata?.avatar_url) {
+                      alert('Avatar URL not available. Did you deploy the updated backend?');
+                    } else {
+                      setShowEditor(true);
+                    }
+                  }}
+                  className="neu-button-accent"
+                >
                   Customize Position
                 </button>
                 <button onClick={() => handleDownload()} className="neu-button">
