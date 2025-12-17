@@ -422,10 +422,10 @@ export default function Home() {
       />
 
       {/* Avatar Editor */}
-      {showEditor && currentJob?.input_image_url && currentJob?.output_image_url && (
+      {showEditor && currentJob?.input_image_url && currentJob?.metadata?.avatar_url && (
         <AvatarEditor
           originalImageUrl={currentJob.input_image_url}
-          avatarImageUrl={currentJob.output_image_url}
+          avatarImageUrl={currentJob.metadata.avatar_url}
           onSave={handleSaveCustomization}
           onCancel={() => setShowEditor(false)}
         />

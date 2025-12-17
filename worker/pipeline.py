@@ -88,13 +88,23 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         else:
             logger.info("Skipping watermark (paid tier)")
 
-        # STEP 6: Upload result to GCS
-        logger.info(f"📤 Step 6/6: Uploading result to GCS")
+        # STEP 6: Upload results to GCS
+        logger.info(f"📤 Step 6/6: Uploading results to GCS")
+
+        # Upload composite image
         result_blob_name = f"{job_id}.png"
         output_url = await upload_to_gcs(
             local_path=composite_path,
             bucket_name=GCS_RESULT_BUCKET,
             blob_name=result_blob_name
+        )
+
+        # Upload isolated avatar (for customization)
+        avatar_blob_name = f"{job_id}_avatar.png"
+        avatar_url = await upload_to_gcs(
+            local_path=pixel_art_isolated_path,
+            bucket_name=GCS_RESULT_BUCKET,
+            blob_name=avatar_blob_name
         )
 
         # Calculate processing time
@@ -104,7 +114,8 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         metadata = {
             "style": "everskies-pixel-art",
             "model": "gpt-image-1",
-            "processing_time_ms": processing_time
+            "processing_time_ms": processing_time,
+            "avatar_url": avatar_url  # Isolated avatar for customization
         }
 
         logger.info(f"✅ Pipeline complete! Processing time: {processing_time}ms")
