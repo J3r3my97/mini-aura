@@ -38,6 +38,7 @@ class JobMetadata(BaseModel):
     generated_prompt: Optional[str] = None
     style: str = "lego"
     processing_time_ms: Optional[int] = None
+    avatar_url: Optional[str] = None  # Isolated avatar for customization
 
 
 class JobResponse(BaseModel):
