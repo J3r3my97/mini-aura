@@ -43,11 +43,11 @@ export default function AvatarEditor({
       const centerX = containerRect.width / 2 - 100; // 100 = half of 200px width
       const centerY = containerRect.height / 2 - 100;
 
-      // Position avatar at center initially
+      // Position avatar at center using transform instead of left/top
       const el = avatarRef.current;
-      el.style.left = `${centerX}px`;
-      el.style.top = `${centerY}px`;
-      el.style.transform = `rotate(${transform.rotate}deg) scale(${transform.scaleX}, ${transform.scaleY})`;
+      el.style.left = '0px';
+      el.style.top = '0px';
+      el.style.transform = `translate(${centerX}px, ${centerY}px) rotate(${transform.rotate}deg) scale(${transform.scaleX}, ${transform.scaleY})`;
 
       setTarget(el);
     }
@@ -95,14 +95,16 @@ export default function AvatarEditor({
     const scaleFactorX = bgImg.width / containerRect.width;
     const scaleFactorY = bgImg.height / containerRect.height;
 
-    // Get avatar's actual position and transform from DOM
-    const avatarLeft = parseFloat(avatarEl.style.left || '0');
-    const avatarTop = parseFloat(avatarEl.style.top || '0');
+    // Get avatar's transform from DOM
     const transformStr = avatarEl.style.transform;
 
-    // Parse transform values
+    // Parse transform values (translate, rotate, scale)
+    const translateMatch = transformStr.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
     const scaleMatch = transformStr.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
-    const rotateMatch = transformStr.match(/rotate\(([^)]+)\)/);
+    const rotateMatch = transformStr.match(/rotate\(([^)]+)deg\)/);
+
+    const translateX = translateMatch ? parseFloat(translateMatch[1]) : 0;
+    const translateY = translateMatch ? parseFloat(translateMatch[2]) : 0;
     const scaleX = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
     const scaleY = scaleMatch && scaleMatch[2] ? parseFloat(scaleMatch[2]) : scaleX;
     const rotateDeg = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
@@ -110,9 +112,9 @@ export default function AvatarEditor({
     // Apply transformations and draw avatar
     ctx.save();
 
-    // Avatar center position (avatar is 200px wide, positioned at top-left)
-    const avatarCenterX = (avatarLeft + 100) * scaleFactorX; // 100 = half of 200px
-    const avatarCenterY = (avatarTop + 100) * scaleFactorY;
+    // Avatar position (translate + half avatar size for center)
+    const avatarCenterX = (translateX + 100) * scaleFactorX; // 100 = half of 200px
+    const avatarCenterY = (translateY + 100) * scaleFactorY;
 
     ctx.translate(avatarCenterX, avatarCenterY);
     ctx.rotate((rotateDeg * Math.PI) / 180);
@@ -178,27 +180,15 @@ export default function AvatarEditor({
               keepRatio={true}
               origin={false}
               onDrag={({ target, transform }) => {
-                // Directly update DOM - no React re-render during drag
+                // Let Moveable handle the full transform
                 target.style.transform = transform;
               }}
-              onResize={({ target, width, height, drag }) => {
-                // Update position during resize (element moves as it resizes)
-                const beforeTranslate = drag.beforeTranslate;
-                target.style.left = `${beforeTranslate[0]}px`;
-                target.style.top = `${beforeTranslate[1]}px`;
-                // Update size via transform scale, preserve existing rotation
-                const currentTransform = target.style.transform;
-                const rotateMatch = currentTransform.match(/rotate\(([^)]+)\)/);
-                const currentRotation = rotateMatch ? rotateMatch[1] : '0deg';
-                const scaleX = width / 200;
-                const scaleY = height / 200;
-                target.style.transform = `rotate(${currentRotation}) scale(${scaleX}, ${scaleY})`;
+              onResize={({ target, transform }) => {
+                // Let Moveable handle the full transform (includes translate, rotate, scale)
+                target.style.transform = transform;
               }}
-              onRotate={({ target, transform, drag }) => {
-                // Update position during rotate
-                const beforeTranslate = drag.beforeTranslate;
-                target.style.left = `${beforeTranslate[0]}px`;
-                target.style.top = `${beforeTranslate[1]}px`;
+              onRotate={({ target, transform }) => {
+                // Let Moveable handle the full transform
                 target.style.transform = transform;
               }}
             />
