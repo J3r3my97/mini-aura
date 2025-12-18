@@ -138,21 +138,8 @@ export default function AvatarEditor({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="neu-card rounded-3xl p-8 max-w-5xl w-full max-h-[95vh] overflow-auto shadow-2xl">
-        <h2 className="text-4xl font-bold mb-3 text-center bg-gradient-to-br from-[#4a4a5e] to-[#8b7fc7] bg-clip-text text-transparent">
-          Customize Your Avatar
-        </h2>
-
-        <div className="mb-8 text-center">
-          <p className="text-[#7a7a8e] text-lg">
-            🎯 <span className="font-semibold">Drag</span> to move •{' '}
-            🔄 <span className="font-semibold">Corners</span> to resize •{' '}
-            🔃 <span className="font-semibold">Handle</span> to rotate
-          </p>
-        </div>
-
-        {/* Editor Container */}
+    <div className="w-full">
+      {/* Editor Container */}
         <div
           ref={containerRef}
           className="relative mx-auto mb-8 neu-card rounded-2xl overflow-hidden"
@@ -221,15 +208,14 @@ export default function AvatarEditor({
         {/* Hidden canvas for compositing */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Action Buttons */}
-        <div className="flex gap-4 justify-center flex-wrap">
-          <button onClick={onCancel} className="neu-button px-8 py-3 text-lg">
-            Cancel
-          </button>
-          <button onClick={handleDownload} className="neu-button-accent px-8 py-3 text-lg">
-            💾 Save & Download
-          </button>
-        </div>
+      {/* Action Buttons */}
+      <div className="flex gap-4 justify-center flex-wrap mt-8">
+        <button onClick={onCancel} className="neu-button px-8 py-3 text-lg">
+          Create Another
+        </button>
+        <button onClick={handleDownload} className="neu-button-accent px-8 py-3 text-lg">
+          💾 Download
+        </button>
       </div>
     </div>
   );

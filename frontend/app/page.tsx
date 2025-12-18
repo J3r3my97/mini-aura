@@ -22,8 +22,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Editor state
-  const [showEditor, setShowEditor] = useState(false);
+  // Customized image state
   const [customizedImage, setCustomizedImage] = useState<string | null>(null);
 
   const handleFileUpload = async (file: File) => {
@@ -134,14 +133,6 @@ export default function Home() {
     } catch (err) {
       console.error('Download failed:', err);
     }
-  };
-
-  const handleSaveCustomization = (blob: Blob) => {
-    const url = URL.createObjectURL(blob);
-    setCustomizedImage(url);
-    setShowEditor(false);
-    // Auto-download
-    handleDownload(url);
   };
 
   return (
@@ -256,48 +247,33 @@ export default function Home() {
             </div>
           )}
 
-          {/* Result Preview */}
-          {currentJob?.status === 'completed' && currentJob.output_image_url && (
+          {/* Interactive Avatar Editor */}
+          {currentJob?.status === 'completed' && currentJob.metadata?.avatar_url && currentJob.input_image_url && (
             <div className="mt-12">
-              <div className="result-image mx-auto max-w-md">
-                <img
-                  src={customizedImage || currentJob.output_image_url}
-                  alt="Your pixel art avatar"
-                  className="rounded-3xl w-full"
-                  crossOrigin="anonymous"
-                  onError={(e) => {
-                    console.error('Failed to load result image:', e);
-                    console.log('Image URL:', customizedImage || currentJob.output_image_url);
-                  }}
-                  onLoad={() => console.log('Result image loaded successfully')}
-                />
-              </div>
-              <div className="flex gap-4 justify-center mt-8 flex-wrap">
-                <button
-                  onClick={() => {
-                    console.log('Customize clicked!');
-                    console.log('Avatar URL:', currentJob?.metadata?.avatar_url);
-                    console.log('Input URL:', currentJob?.input_image_url);
-                    if (!currentJob?.metadata?.avatar_url) {
-                      alert('Avatar URL not available. Did you deploy the updated backend?');
-                    } else {
-                      setShowEditor(true);
-                    }
-                  }}
-                  className="neu-button-accent"
-                >
-                  Customize Position
-                </button>
-                <button onClick={() => handleDownload()} className="neu-button">
-                  Download
-                </button>
-                <button onClick={handleReset} className="neu-button">
-                  Create Another
-                </button>
-              </div>
+              <h3 className="text-2xl font-bold mb-6 text-center bg-gradient-to-br from-[#4a4a5e] to-[#8b7fc7] bg-clip-text text-transparent">
+                Customize Your Avatar
+              </h3>
+              <p className="text-[#7a7a8e] text-center mb-6">
+                🎯 <span className="font-semibold">Drag</span> to move •{' '}
+                🔄 <span className="font-semibold">Corners</span> to resize •{' '}
+                🔃 <span className="font-semibold">Handle</span> to rotate
+              </p>
+
+              {/* Inline Editor */}
+              <AvatarEditor
+                originalImageUrl={currentJob.input_image_url}
+                avatarImageUrl={currentJob.metadata.avatar_url}
+                onSave={(blob) => {
+                  const url = URL.createObjectURL(blob);
+                  setCustomizedImage(url);
+                  handleDownload(url);
+                }}
+                onCancel={handleReset}
+              />
+
               {currentJob.metadata?.processing_time && (
-                <p className="text-[#7a7a8e] text-sm mt-4">
-                  Generated in {currentJob.metadata.processing_time.toFixed(1)}s
+                <p className="text-[#7a7a8e] text-sm mt-6 text-center">
+                  Generated in {(currentJob.metadata.processing_time / 1000).toFixed(1)}s
                 </p>
               )}
             </div>
@@ -436,15 +412,6 @@ export default function Home() {
         }}
       />
 
-      {/* Avatar Editor */}
-      {showEditor && currentJob?.input_image_url && currentJob?.metadata?.avatar_url && (
-        <AvatarEditor
-          originalImageUrl={currentJob.input_image_url}
-          avatarImageUrl={currentJob.metadata.avatar_url}
-          onSave={handleSaveCustomization}
-          onCancel={() => setShowEditor(false)}
-        />
-      )}
     </div>
   );
 }
