@@ -251,12 +251,10 @@ export default function Home() {
           {currentJob?.status === 'completed' && currentJob.metadata?.avatar_url && currentJob.input_image_url && (
             <div className="mt-12">
               <h3 className="text-2xl font-bold mb-6 text-center bg-gradient-to-br from-[#4a4a5e] to-[#8b7fc7] bg-clip-text text-transparent">
-                Customize Your Avatar
+                🎮 Game Mode: Customize Your Avatar!
               </h3>
-              <p className="text-[#7a7a8e] text-center mb-6">
-                🎯 <span className="font-semibold">Drag</span> to move •{' '}
-                🔄 <span className="font-semibold">Corners</span> to resize •{' '}
-                🔃 <span className="font-semibold">Handle</span> to rotate
+              <p className="text-[#7a7a8e] text-center mb-6 text-lg">
+                Use the <span className="font-bold text-[#8b7fc7]">GBA controller</span> below or your keyboard to position your pixel avatar!
               </p>
 
               {/* Inline Editor */}

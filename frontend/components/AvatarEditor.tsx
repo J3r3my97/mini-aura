@@ -36,6 +36,9 @@ export default function AvatarEditor({
     rotate: 0,
   });
 
+  // GBA button press states for visual feedback
+  const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (avatarRef.current && containerRef.current) {
       // Calculate center position
@@ -52,6 +55,104 @@ export default function AvatarEditor({
 
       setTarget(el);
     }
+  }, []);
+
+  // GBA Controls - Keyboard event handlers
+  useEffect(() => {
+    const MOVE_STEP = 5; // pixels per key press
+    const SCALE_STEP = 0.05; // scale increment
+    const ROTATE_STEP = 5; // degrees per press
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!avatarRef.current) return;
+
+      const el = avatarRef.current;
+      const currentTransform = el.style.transform;
+
+      // Parse current values
+      const translateMatch = currentTransform.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
+      const scaleMatch = currentTransform.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
+      const rotateMatch = currentTransform.match(/rotate\(([^)]+)deg\)/);
+
+      let x = translateMatch ? parseFloat(translateMatch[1]) : 0;
+      let y = translateMatch ? parseFloat(translateMatch[2]) : 0;
+      let scale = scaleMatch ? parseFloat(scaleMatch[1]) : 0.3;
+      let rotation = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
+
+      let updated = false;
+
+      // D-Pad - Arrow keys for movement
+      if (e.key === 'ArrowUp') {
+        y -= MOVE_STEP;
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('up'));
+      } else if (e.key === 'ArrowDown') {
+        y += MOVE_STEP;
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('down'));
+      } else if (e.key === 'ArrowLeft') {
+        x -= MOVE_STEP;
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('left'));
+      } else if (e.key === 'ArrowRight') {
+        x += MOVE_STEP;
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('right'));
+      }
+      // A Button - Size UP
+      else if (e.key.toLowerCase() === 'a' || e.key === ' ') {
+        scale = Math.min(scale + SCALE_STEP, 2); // Max 2x
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('a'));
+        e.preventDefault();
+      }
+      // B Button - Size DOWN
+      else if (e.key.toLowerCase() === 'b') {
+        scale = Math.max(scale - SCALE_STEP, 0.1); // Min 0.1x
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('b'));
+      }
+      // L Shoulder - Rotate LEFT
+      else if (e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'l') {
+        rotation -= ROTATE_STEP;
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('l'));
+      }
+      // R Shoulder - Rotate RIGHT
+      else if (e.key.toLowerCase() === 'e' || e.key.toLowerCase() === 'r') {
+        rotation += ROTATE_STEP;
+        updated = true;
+        setPressedKeys(prev => new Set(prev).add('r'));
+      }
+
+      if (updated) {
+        el.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Clear pressed state on key up
+      setPressedKeys(prev => {
+        const next = new Set(prev);
+        if (e.key === 'ArrowUp') next.delete('up');
+        if (e.key === 'ArrowDown') next.delete('down');
+        if (e.key === 'ArrowLeft') next.delete('left');
+        if (e.key === 'ArrowRight') next.delete('right');
+        if (e.key.toLowerCase() === 'a' || e.key === ' ') next.delete('a');
+        if (e.key.toLowerCase() === 'b') next.delete('b');
+        if (e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'l') next.delete('l');
+        if (e.key.toLowerCase() === 'e' || e.key.toLowerCase() === 'r') next.delete('r');
+        return next;
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, []);
 
   const handleDownload = async () => {
@@ -200,8 +301,146 @@ export default function AvatarEditor({
         {/* Hidden canvas for compositing */}
         <canvas ref={canvasRef} className="hidden" />
 
+      {/* GBA Controller UI */}
+      <div className="mt-8 mx-auto max-w-2xl">
+        <div className="neu-card rounded-3xl p-6 bg-gradient-to-br from-[#9b8bc9] to-[#7b6bb0]">
+          <div className="flex items-center justify-between gap-8">
+            {/* D-Pad */}
+            <div className="flex flex-col items-center">
+              <div className="text-[#e6e7f0] text-xs font-semibold mb-2">D-PAD</div>
+              <div className="relative w-32 h-32">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="grid grid-cols-3 grid-rows-3 gap-1">
+                    <div></div>
+                    <button
+                      className={`w-8 h-8 rounded-lg transition-all ${
+                        pressedKeys.has('up')
+                          ? 'bg-[#4a4a5e] shadow-inner'
+                          : 'bg-[#2a2a3e] shadow-lg'
+                      }`}
+                      onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))}
+                      onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp' }))}
+                    >
+                      ▲
+                    </button>
+                    <div></div>
+                    <button
+                      className={`w-8 h-8 rounded-lg transition-all ${
+                        pressedKeys.has('left')
+                          ? 'bg-[#4a4a5e] shadow-inner'
+                          : 'bg-[#2a2a3e] shadow-lg'
+                      }`}
+                      onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))}
+                      onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft' }))}
+                    >
+                      ◄
+                    </button>
+                    <div className="w-8 h-8"></div>
+                    <button
+                      className={`w-8 h-8 rounded-lg transition-all ${
+                        pressedKeys.has('right')
+                          ? 'bg-[#4a4a5e] shadow-inner'
+                          : 'bg-[#2a2a3e] shadow-lg'
+                      }`}
+                      onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))}
+                      onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight' }))}
+                    >
+                      ►
+                    </button>
+                    <div></div>
+                    <button
+                      className={`w-8 h-8 rounded-lg transition-all ${
+                        pressedKeys.has('down')
+                          ? 'bg-[#4a4a5e] shadow-inner'
+                          : 'bg-[#2a2a3e] shadow-lg'
+                      }`}
+                      onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))}
+                      onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown' }))}
+                    >
+                      ▼
+                    </button>
+                    <div></div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-[#e6e7f0]/60 text-xs mt-2">Arrow Keys</div>
+            </div>
+
+            {/* Action Buttons (A/B) */}
+            <div className="flex flex-col items-center">
+              <div className="text-[#e6e7f0] text-xs font-semibold mb-2">SIZE</div>
+              <div className="flex gap-4 items-center">
+                <div className="flex flex-col items-center">
+                  <button
+                    className={`w-16 h-16 rounded-full font-bold text-2xl transition-all ${
+                      pressedKeys.has('b')
+                        ? 'bg-[#e74c3c] shadow-inner'
+                        : 'bg-[#e67e73] shadow-lg hover:bg-[#e74c3c]'
+                    }`}
+                    onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'b' }))}
+                    onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'b' }))}
+                  >
+                    B
+                  </button>
+                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Down (B)</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <button
+                    className={`w-16 h-16 rounded-full font-bold text-2xl transition-all ${
+                      pressedKeys.has('a')
+                        ? 'bg-[#27ae60] shadow-inner'
+                        : 'bg-[#52c89a] shadow-lg hover:bg-[#27ae60]'
+                    }`}
+                    onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))}
+                    onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }))}
+                  >
+                    A
+                  </button>
+                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Up (A)</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Shoulder Buttons (L/R) */}
+            <div className="flex flex-col items-center">
+              <div className="text-[#e6e7f0] text-xs font-semibold mb-2">ROTATE</div>
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <button
+                    className={`w-20 h-12 rounded-lg font-bold text-lg transition-all ${
+                      pressedKeys.has('l')
+                        ? 'bg-[#4a4a5e] shadow-inner'
+                        : 'bg-[#5a5a6e] shadow-lg hover:bg-[#4a4a5e]'
+                    }`}
+                    onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q' }))}
+                    onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'q' }))}
+                  >
+                    L
+                  </button>
+                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Left (Q)</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <button
+                    className={`w-20 h-12 rounded-lg font-bold text-lg transition-all ${
+                      pressedKeys.has('r')
+                        ? 'bg-[#4a4a5e] shadow-inner'
+                        : 'bg-[#5a5a6e] shadow-lg hover:bg-[#4a4a5e]'
+                    }`}
+                    onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }))}
+                    onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'e' }))}
+                  >
+                    R
+                  </button>
+                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Right (E)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Action Buttons */}
-      <div className="flex gap-4 justify-center flex-wrap mt-8">
+      <div className="flex gap-4 justify-center flex-wrap mt-6">
         <button onClick={onCancel} className="neu-button px-8 py-3 text-lg">
           Create Another
         </button>
