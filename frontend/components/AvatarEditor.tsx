@@ -38,12 +38,13 @@ export default function AvatarEditor({
 
   useEffect(() => {
     if (avatarRef.current && containerRef.current) {
-      // Calculate center position in pixels
+      // Calculate center position
       const containerRect = containerRef.current.getBoundingClientRect();
-      const centerX = containerRect.width / 2 - 100; // 100 = half of 200px width
-      const centerY = containerRect.height / 2 - 100;
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
 
-      // Position avatar at center using transform instead of left/top
+      // Position avatar at center using transform
+      // Since transformOrigin is at (100px, 100px), we translate to center the origin point
       const el = avatarRef.current;
       el.style.left = '0px';
       el.style.top = '0px';
@@ -112,9 +113,9 @@ export default function AvatarEditor({
     // Apply transformations and draw avatar
     ctx.save();
 
-    // Avatar position (translate + half avatar size for center)
-    const avatarCenterX = (translateX + 100) * scaleFactorX; // 100 = half of 200px
-    const avatarCenterY = (translateY + 100) * scaleFactorY;
+    // Avatar center position (translate now positions the center directly)
+    const avatarCenterX = translateX * scaleFactorX;
+    const avatarCenterY = translateY * scaleFactorY;
 
     ctx.translate(avatarCenterX, avatarCenterY);
     ctx.rotate((rotateDeg * Math.PI) / 180);
@@ -166,7 +167,8 @@ export default function AvatarEditor({
             className="absolute cursor-move"
             style={{
               width: '200px',
-              transformOrigin: 'center center',
+              height: 'auto',
+              transformOrigin: '100px 100px', // Center of 200px image
             }}
           />
 
