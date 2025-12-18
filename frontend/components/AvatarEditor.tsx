@@ -27,7 +27,7 @@ export default function AvatarEditor({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Transform state
+  // Transform state (only for canvas rendering, not for live display)
   const [transform, setTransform] = useState({
     translateX: 0,
     translateY: 0,
@@ -37,8 +37,19 @@ export default function AvatarEditor({
   });
 
   useEffect(() => {
-    if (avatarRef.current) {
-      setTarget(avatarRef.current);
+    if (avatarRef.current && containerRef.current) {
+      // Calculate center position in pixels
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const centerX = containerRect.width / 2 - 100; // 100 = half of 200px width
+      const centerY = containerRect.height / 2 - 100;
+
+      // Position avatar at center initially
+      const el = avatarRef.current;
+      el.style.left = `${centerX}px`;
+      el.style.top = `${centerY}px`;
+      el.style.transform = `rotate(${transform.rotate}deg) scale(${transform.scaleX}, ${transform.scaleY})`;
+
+      setTarget(el);
     }
   }, []);
 
@@ -78,21 +89,34 @@ export default function AvatarEditor({
 
     // Calculate avatar position relative to canvas
     const containerRect = containerRef.current?.getBoundingClientRect();
-    if (!containerRect) return;
+    const avatarEl = avatarRef.current;
+    if (!containerRect || !avatarEl) return;
 
     const scaleFactorX = bgImg.width / containerRect.width;
     const scaleFactorY = bgImg.height / containerRect.height;
 
+    // Get avatar's actual position and transform from DOM
+    const avatarLeft = parseFloat(avatarEl.style.left || '0');
+    const avatarTop = parseFloat(avatarEl.style.top || '0');
+    const transformStr = avatarEl.style.transform;
+
+    // Parse transform values
+    const scaleMatch = transformStr.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
+    const rotateMatch = transformStr.match(/rotate\(([^)]+)\)/);
+    const scaleX = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    const scaleY = scaleMatch && scaleMatch[2] ? parseFloat(scaleMatch[2]) : scaleX;
+    const rotateDeg = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
+
     // Apply transformations and draw avatar
     ctx.save();
 
-    // Translate to avatar position (scaled to canvas size)
-    const centerX = (containerRect.width / 2 + transform.translateX) * scaleFactorX;
-    const centerY = (containerRect.height / 2 + transform.translateY) * scaleFactorY;
+    // Avatar center position (avatar is 200px wide, positioned at top-left)
+    const avatarCenterX = (avatarLeft + 100) * scaleFactorX; // 100 = half of 200px
+    const avatarCenterY = (avatarTop + 100) * scaleFactorY;
 
-    ctx.translate(centerX, centerY);
-    ctx.rotate((transform.rotate * Math.PI) / 180);
-    ctx.scale(transform.scaleX, transform.scaleY);
+    ctx.translate(avatarCenterX, avatarCenterY);
+    ctx.rotate((rotateDeg * Math.PI) / 180);
+    ctx.scale(scaleX, scaleY);
 
     // Draw avatar centered at current position
     ctx.drawImage(
@@ -152,11 +176,8 @@ export default function AvatarEditor({
             alt="Avatar"
             className="absolute cursor-move"
             style={{
-              top: '50%',
-              left: '50%',
               width: '200px',
               transformOrigin: 'center center',
-              transform: `translate(-50%, -50%) translate(${transform.translateX}px, ${transform.translateY}px) rotate(${transform.rotate}deg) scale(${transform.scaleX}, ${transform.scaleY})`,
             }}
           />
 
@@ -169,31 +190,17 @@ export default function AvatarEditor({
               rotatable={true}
               keepRatio={true}
               origin={false}
-              onDrag={({ translate }) => {
-                setTransform((prev) => ({
-                  ...prev,
-                  translateX: translate[0],
-                  translateY: translate[1],
-                }));
+              onDrag={({ target, transform }) => {
+                // Directly update DOM - no React re-render during drag
+                target.style.transform = transform;
               }}
-              onResize={({ width, height, drag }) => {
-                const scaleX = width / 200;
-                const scaleY = height / 200;
-                setTransform((prev) => ({
-                  ...prev,
-                  scaleX,
-                  scaleY,
-                  translateX: drag.translate[0],
-                  translateY: drag.translate[1],
-                }));
+              onResize={({ target, transform }) => {
+                // Directly update DOM - no React re-render during resize
+                target.style.transform = transform;
               }}
-              onRotate={({ rotate, drag }) => {
-                setTransform((prev) => ({
-                  ...prev,
-                  rotate,
-                  translateX: drag.translate[0],
-                  translateY: drag.translate[1],
-                }));
+              onRotate={({ target, transform }) => {
+                // Directly update DOM - no React re-render during rotate
+                target.style.transform = transform;
               }}
             />
           )}
