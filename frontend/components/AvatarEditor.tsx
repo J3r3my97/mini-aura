@@ -303,8 +303,41 @@ export default function AvatarEditor({
 
       {/* GBA Controller UI */}
       <div className="mt-8 mx-auto max-w-2xl">
-        <div className="neu-card rounded-3xl p-6 bg-gradient-to-br from-[#9b8bc9] to-[#7b6bb0]">
-          <div className="flex items-center justify-between gap-8">
+        <div className="neu-card rounded-3xl p-6 bg-gradient-to-br from-[#9b8bc9] to-[#7b6bb0] relative">
+          {/* Shoulder Buttons (L/R) - Top */}
+          <div className="absolute -top-4 left-0 right-0 flex justify-between px-8">
+            <div className="flex flex-col items-center">
+              <button
+                className={`w-24 h-10 rounded-t-xl rounded-b-md font-bold text-lg transition-all ${
+                  pressedKeys.has('l')
+                    ? 'bg-[#4a4a5e] shadow-inner'
+                    : 'bg-[#5a5a6e] shadow-lg hover:bg-[#4a4a5e]'
+                }`}
+                onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q' }))}
+                onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'q' }))}
+              >
+                L
+              </button>
+              <div className="text-[#e6e7f0] text-xs mt-1 font-semibold">Q</div>
+            </div>
+            <div className="flex flex-col items-center">
+              <button
+                className={`w-24 h-10 rounded-t-xl rounded-b-md font-bold text-lg transition-all ${
+                  pressedKeys.has('r')
+                    ? 'bg-[#4a4a5e] shadow-inner'
+                    : 'bg-[#5a5a6e] shadow-lg hover:bg-[#4a4a5e]'
+                }`}
+                onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }))}
+                onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'e' }))}
+              >
+                R
+              </button>
+              <div className="text-[#e6e7f0] text-xs mt-1 font-semibold">E</div>
+            </div>
+          </div>
+
+          {/* Main Controller Panel */}
+          <div className="flex items-center justify-around gap-8 pt-6">
             {/* D-Pad */}
             <div className="flex flex-col items-center">
               <div className="text-[#e6e7f0] text-xs font-semibold mb-2">D-PAD</div>
@@ -366,6 +399,15 @@ export default function AvatarEditor({
               <div className="text-[#e6e7f0]/60 text-xs mt-2">Arrow Keys</div>
             </div>
 
+            {/* Center Info */}
+            <div className="flex flex-col items-center justify-center">
+              <div className="text-[#e6e7f0] text-lg font-bold mb-2">MOVE</div>
+              <div className="text-[#e6e7f0]/60 text-sm">↑↓←→</div>
+              <div className="h-4"></div>
+              <div className="text-[#e6e7f0] text-lg font-bold mb-2">ROTATE</div>
+              <div className="text-[#e6e7f0]/60 text-sm">L • R</div>
+            </div>
+
             {/* Action Buttons (A/B) */}
             <div className="flex flex-col items-center">
               <div className="text-[#e6e7f0] text-xs font-semibold mb-2">SIZE</div>
@@ -382,7 +424,7 @@ export default function AvatarEditor({
                   >
                     B
                   </button>
-                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Down (B)</div>
+                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Down</div>
                 </div>
                 <div className="flex flex-col items-center">
                   <button
@@ -396,42 +438,7 @@ export default function AvatarEditor({
                   >
                     A
                   </button>
-                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Up (A)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Shoulder Buttons (L/R) */}
-            <div className="flex flex-col items-center">
-              <div className="text-[#e6e7f0] text-xs font-semibold mb-2">ROTATE</div>
-              <div className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <button
-                    className={`w-20 h-12 rounded-lg font-bold text-lg transition-all ${
-                      pressedKeys.has('l')
-                        ? 'bg-[#4a4a5e] shadow-inner'
-                        : 'bg-[#5a5a6e] shadow-lg hover:bg-[#4a4a5e]'
-                    }`}
-                    onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q' }))}
-                    onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'q' }))}
-                  >
-                    L
-                  </button>
-                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Left (Q)</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <button
-                    className={`w-20 h-12 rounded-lg font-bold text-lg transition-all ${
-                      pressedKeys.has('r')
-                        ? 'bg-[#4a4a5e] shadow-inner'
-                        : 'bg-[#5a5a6e] shadow-lg hover:bg-[#4a4a5e]'
-                    }`}
-                    onMouseDown={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }))}
-                    onMouseUp={() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'e' }))}
-                  >
-                    R
-                  </button>
-                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Right (E)</div>
+                  <div className="text-[#e6e7f0]/60 text-xs mt-1">Up</div>
                 </div>
               </div>
             </div>
