@@ -260,13 +260,16 @@ export default function Home() {
           {currentJob?.status === 'completed' && currentJob.output_image_url && (
             <div className="mt-12">
               <div className="result-image mx-auto max-w-md">
-                <Image
+                <img
                   src={customizedImage || currentJob.output_image_url}
                   alt="Your pixel art avatar"
-                  width={400}
-                  height={400}
                   className="rounded-3xl w-full"
-                  unoptimized
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    console.error('Failed to load result image:', e);
+                    console.log('Image URL:', customizedImage || currentJob.output_image_url);
+                  }}
+                  onLoad={() => console.log('Result image loaded successfully')}
                 />
               </div>
               <div className="flex gap-4 justify-center mt-8 flex-wrap">

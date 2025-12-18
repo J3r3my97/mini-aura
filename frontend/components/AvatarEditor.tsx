@@ -194,12 +194,24 @@ export default function AvatarEditor({
                 // Directly update DOM - no React re-render during drag
                 target.style.transform = transform;
               }}
-              onResize={({ target, transform }) => {
-                // Directly update DOM - no React re-render during resize
-                target.style.transform = transform;
+              onResize={({ target, width, height, drag }) => {
+                // Update position during resize (element moves as it resizes)
+                const beforeTranslate = drag.beforeTranslate;
+                target.style.left = `${beforeTranslate[0]}px`;
+                target.style.top = `${beforeTranslate[1]}px`;
+                // Update size via transform scale, preserve existing rotation
+                const currentTransform = target.style.transform;
+                const rotateMatch = currentTransform.match(/rotate\(([^)]+)\)/);
+                const currentRotation = rotateMatch ? rotateMatch[1] : '0deg';
+                const scaleX = width / 200;
+                const scaleY = height / 200;
+                target.style.transform = `rotate(${currentRotation}) scale(${scaleX}, ${scaleY})`;
               }}
-              onRotate={({ target, transform }) => {
-                // Directly update DOM - no React re-render during rotate
+              onRotate={({ target, transform, drag }) => {
+                // Update position during rotate
+                const beforeTranslate = drag.beforeTranslate;
+                target.style.left = `${beforeTranslate[0]}px`;
+                target.style.top = `${beforeTranslate[1]}px`;
                 target.style.transform = transform;
               }}
             />
