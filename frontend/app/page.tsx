@@ -470,5 +470,5 @@ const footerSections = [
   { title: 'Product', links: [{ text: 'Features', href: '#features' }, { text: 'Pricing', href: '#pricing' }, { text: 'API', href: '#' }, { text: 'Roadmap', href: '#' }] },
   { title: 'Company', links: [{ text: 'About', href: '#' }, { text: 'Blog', href: '#' }, { text: 'Careers', href: '#' }, { text: 'Press Kit', href: '#' }] },
   { title: 'Resources', links: [{ text: 'Documentation', href: '#' }, { text: 'Tutorials', href: '#' }, { text: 'Support', href: '#' }, { text: 'Status', href: '#' }] },
-  { title: 'Legal', links: [{ text: 'Privacy', href: '#' }, { text: 'Terms', href: '#' }, { text: 'License', href: '#' }, { text: 'Cookie Policy', href: '#' }] },
+  { title: 'Legal', links: [{ text: 'Privacy', href: '/privacy' }, { text: 'Terms', href: '/terms' }, { text: 'License', href: '#' }, { text: 'Cookie Policy', href: '#' }] },
 ];

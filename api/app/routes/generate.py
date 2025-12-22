@@ -2,10 +2,12 @@
 /api/generate endpoint
 Upload image and create generation job
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 import logging
 import uuid
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from config import (
     PROJECT_ID,
@@ -25,6 +27,7 @@ from app.auth import get_current_user
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 def validate_image_file(file: UploadFile) -> None:
@@ -106,7 +109,9 @@ async def check_and_deduct_credit(user_id: str) -> dict:
 
 
 @router.post("/generate", response_model=GenerateResponse, status_code=201)
+@limiter.limit("10/minute")
 async def generate(
+    request: Request,
     file: UploadFile = File(..., description="Image file to process"),
     current_user: dict = Depends(get_current_user)
 ):
