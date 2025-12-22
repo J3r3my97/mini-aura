@@ -212,6 +212,7 @@ export interface JobResponse {
   metadata?: {
     processing_time?: number;
     model_used?: string;
+    avatar_url?: string;  // Isolated avatar for customization
   };
 }
 

@@ -49,7 +49,7 @@ async def upload_to_gcs(
         content_type: MIME type
 
     Returns:
-        GCS URL (gs://bucket/blob)
+        Public HTTP URL (https://storage.googleapis.com/bucket/blob)
     """
     try:
         bucket = storage_client.bucket(bucket_name)
@@ -58,7 +58,8 @@ async def upload_to_gcs(
         blob.upload_from_file(file, content_type=content_type, rewind=True)
         logger.info(f"Uploaded to gs://{bucket_name}/{blob_name}")
 
-        return f"gs://{bucket_name}/{blob_name}"
+        # Return public HTTP URL instead of gs:// URI
+        return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
 
     except Exception as e:
         logger.error(f"Error uploading to GCS: {str(e)}")

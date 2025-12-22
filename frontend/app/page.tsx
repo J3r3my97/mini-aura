@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInModal from '@/components/auth/SignInModal';
 import SignUpModal from '@/components/auth/SignUpModal';
+import AvatarEditor from '@/components/AvatarEditor';
 import api, { JobResponse } from '@/lib/api';
 import { compressImage, validateImageFile } from '@/lib/imageCompression';
 
@@ -20,6 +21,9 @@ export default function Home() {
   const [currentJob, setCurrentJob] = useState<JobResponse | null>(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Customized image state
+  const [customizedImage, setCustomizedImage] = useState<string | null>(null);
 
   const handleFileUpload = async (file: File) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -111,16 +115,17 @@ export default function Home() {
     setError('');
   };
 
-  const handleDownload = async () => {
-    if (!currentJob?.output_image_url) return;
+  const handleDownload = async (imageUrl?: string) => {
+    const urlToDownload = imageUrl || customizedImage || currentJob?.output_image_url;
+    if (!urlToDownload) return;
 
     try {
-      const response = await fetch(currentJob.output_image_url);
+      const response = await fetch(urlToDownload);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mini-me-${currentJob.job_id}.png`;
+      a.download = `mini-me-${currentJob?.job_id || 'customized'}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -242,31 +247,31 @@ export default function Home() {
             </div>
           )}
 
-          {/* Result Preview */}
-          {currentJob?.status === 'completed' && currentJob.output_image_url && (
+          {/* Interactive Avatar Editor */}
+          {currentJob?.status === 'completed' && currentJob.metadata?.avatar_url && currentJob.input_image_url && (
             <div className="mt-12">
-              <div className="result-image mx-auto max-w-md">
-                <Image
-                  src={currentJob.output_image_url}
-                  alt="Your pixel art avatar"
-                  width={400}
-                  height={400}
-                  className="rounded-3xl w-full"
-                  unoptimized
-                />
-              </div>
-              <div className="flex gap-4 justify-center mt-8 flex-wrap">
-                <button onClick={handleDownload} className="neu-button-accent">
-                  Download
-                </button>
-                <button className="neu-button">Share</button>
-                <button onClick={handleReset} className="neu-button">
-                  Create Another
-                </button>
-              </div>
+              <h3 className="text-2xl font-bold mb-6 text-center bg-gradient-to-br from-[#4a4a5e] to-[#8b7fc7] bg-clip-text text-transparent">
+                🎮 Game Mode: Customize Your Avatar!
+              </h3>
+              <p className="text-[#7a7a8e] text-center mb-6 text-lg">
+                Use the <span className="font-bold text-[#8b7fc7]">GBA controller</span> below or your keyboard to position your pixel avatar!
+              </p>
+
+              {/* Inline Editor */}
+              <AvatarEditor
+                originalImageUrl={currentJob.input_image_url}
+                avatarImageUrl={currentJob.metadata.avatar_url}
+                onSave={(blob) => {
+                  const url = URL.createObjectURL(blob);
+                  setCustomizedImage(url);
+                  handleDownload(url);
+                }}
+                onCancel={handleReset}
+              />
+
               {currentJob.metadata?.processing_time && (
-                <p className="text-[#7a7a8e] text-sm mt-4">
-                  Generated in {currentJob.metadata.processing_time.toFixed(1)}s
+                <p className="text-[#7a7a8e] text-sm mt-6 text-center">
+                  Generated in {(currentJob.metadata.processing_time / 1000).toFixed(1)}s
                 </p>
               )}
             </div>
@@ -404,6 +409,7 @@ export default function Home() {
           setShowSignIn(true);
         }}
       />
+
     </div>
   );
 }
