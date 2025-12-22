@@ -1,5 +1,5 @@
 """
-Mini-Me API Service
+Mini-Aura API Service
 FastAPI backend for handling uploads, auth, and job management
 """
 
@@ -30,7 +30,7 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
-    logger.info("🚀 Mini-Me API starting up...")
+    logger.info("🚀 Mini-Aura API starting up...")
 
     # Initialize Firebase Admin SDK
     try:
@@ -43,10 +43,10 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("👋 Mini-Me API shutting down...")
+    logger.info("👋 Mini-Aura API shutting down...")
 
 app = FastAPI(
-    title="Mini-Me API",
+    title="Mini-Aura API",
     description="AI Pixel Art Avatar Generator",
     version="1.0.0",
     lifespan=lifespan
@@ -69,7 +69,7 @@ app.add_middleware(
 async def root():
     """Health check endpoint"""
     return {
-        "service": "mini-me-api",
+        "service": "mini-aura-api",
         "status": "healthy",
         "version": "1.0.0"
     }

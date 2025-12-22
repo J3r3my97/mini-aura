@@ -1,7 +1,7 @@
 {
-  "name": "mini-me-frontend",
+  "name": "mini-aura-frontend",
   "version": "1.0.0",
-  "description": "Mini-Me AI Pixel Art Avatar Generator - Frontend",
+  "description": "Mini-Aura AI Pixel Art Avatar Generator - Frontend",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -10,12 +10,12 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Mini-Me — AI Pixel Art Avatar Generator',
+  title: 'Mini-Aura — AI Pixel Art Avatar Generator',
   description: 'Transform your photos into stunning pixel art avatars in seconds. One click, endless possibilities.',
   keywords: ['pixel art', 'avatar generator', 'AI', 'image generation', 'profile picture'],
-  authors: [{ name: 'Mini-Me' }],
+  authors: [{ name: 'Mini-Aura' }],
   openGraph: {
-    title: 'Mini-Me — AI Pixel Art Avatar Generator',
+    title: 'Mini-Aura — AI Pixel Art Avatar Generator',
     description: 'Transform your photos into stunning pixel art avatars',
     type: 'website',
   },

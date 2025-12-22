@@ -1,5 +1,5 @@
 /**
- * API Client for Mini-Me Backend
+ * API Client for Mini-Aura Backend
  * Handles all API requests with Firebase authentication
  */
 

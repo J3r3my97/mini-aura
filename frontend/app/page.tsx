@@ -115,7 +115,7 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mini-me-${currentJob?.job_id || 'customized'}.png`;
+      a.download = `mini-aura-${currentJob?.job_id || 'customized'}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -131,7 +131,7 @@ export default function Home() {
       <header className="sticky top-0 bg-[#e6e7f0] z-50">
         <nav className="container mx-auto px-6 py-8 flex justify-between items-center max-w-7xl">
           <a href="#" className="text-3xl font-extrabold text-[#8b7fc7] tracking-tight">
-            Mini-Me
+            Mini-Aura
           </a>
           <div className="flex items-center gap-8">
             <a href="#features" className="text-[#4a4a5e] font-medium hover:text-[#8b7fc7] transition-colors hidden md:block">
@@ -364,7 +364,7 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center pt-8 border-t border-[#c8c9d4]">
-            <p className="text-[#7a7a8e]">&copy; 2025 Mini-Me. All rights reserved. Built with AI magic.</p>
+            <p className="text-[#7a7a8e]">&copy; 2025 Mini-Aura. All rights reserved. Built with AI magic.</p>
           </div>
         </div>
       </footer>
