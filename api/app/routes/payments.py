@@ -162,29 +162,34 @@ async def get_subscription_status(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get current user's subscription status
+    Get current user's credit balance and usage
 
     Returns:
-    - Current tier
-    - Usage count and limit
-    - Subscription status (active, trialing, cancelled)
-    - Trial end date
-    - Next billing date
+    - Available credits
+    - Free credits used
+    - Total avatars generated
+    - Whether watermark applies
     """
     try:
         user_id = current_user["user_id"]
+        from config import FREE_CREDITS
+
+        # Get credit info
+        credits = current_user.get("credits", 0)
+        free_credits_used = current_user.get("free_credits_used", 0)
+        total_generated = current_user.get("total_generated", 0)
+
+        # Watermark applies if using free credits (no paid credits left)
+        has_watermark = credits == 0 and free_credits_used < FREE_CREDITS
 
         return {
             "user_id": user_id,
-            "subscription_tier": current_user.get("subscription_tier", "free"),
-            "subscription_status": current_user.get("stripe_subscription_status"),
-            "usage_count": current_user.get("usage_count", 0),
-            "usage_limit": current_user.get("usage_limit", 5),
-            "trial_end": current_user.get("trial_end"),
-            "current_period_end": current_user.get("subscription_current_period_end"),
-            "has_payment_method": current_user.get("payment_method_added", False)
+            "credits": credits,
+            "free_credits_used": free_credits_used,
+            "total_generated": total_generated,
+            "has_watermark": has_watermark
         }
 
     except Exception as e:
         logger.error(f"Error getting subscription status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get subscription status")
+        raise HTTPException(status_code=500, detail="Failed to get credit status")

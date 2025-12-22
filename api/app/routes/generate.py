@@ -14,7 +14,7 @@ from config import (
     MAX_UPLOAD_SIZE,
     ALLOWED_EXTENSIONS,
     ALLOWED_MIME_TYPES,
-    USAGE_LIMITS
+    FREE_CREDITS
 )
 from app.models.schemas import GenerateResponse, JobStatus
 from app.utils.firestore import get_user, create_job, increment_user_usage
@@ -54,57 +54,60 @@ def validate_image_file(file: UploadFile) -> None:
         )
 
 
-async def check_user_usage(user_id: str, session_id: str = None) -> None:
+async def check_and_deduct_credit(user_id: str) -> dict:
     """
-    Check if user has available usage
+    Check if user has available credits and deduct one
 
     Args:
         user_id: Firebase user ID
-        session_id: Optional Stripe session ID (for one-time payments)
+
+    Returns:
+        dict with "has_watermark" boolean (True if using free credit)
+
+    Raises:
+        HTTPException if no credits available
     """
     user = await get_user(user_id)
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # If one-time session provided, verify payment and allow generation
-    if session_id:
-        try:
-            import stripe
-            from config import STRIPE_SECRET_KEY
-            stripe.api_key = STRIPE_SECRET_KEY
+    credits = user.get("credits", 0)
+    free_credits_used = user.get("free_credits_used", 0)
 
-            session = stripe.checkout.Session.retrieve(session_id)
+    # Check if user has paid credits
+    if credits > 0:
+        # Deduct paid credit (no watermark)
+        from app.utils.firestore import db
+        db.collection("users").document(user_id).update({
+            "credits": credits - 1,
+            "total_generated": user.get("total_generated", 0) + 1
+        })
+        logger.info(f"Deducted 1 paid credit from user {user_id}. Remaining: {credits - 1}")
+        return {"has_watermark": False}
 
-            # Verify session is completed and for this user
-            if (session.payment_status == "paid" and
-                session.metadata.get("firebase_uid") == user_id and
-                session.metadata.get("payment_type") == "onetime"):
-                logger.info(f"One-time payment verified for user {user_id}")
-                return  # Allow generation
-        except Exception as e:
-            logger.error(f"Error verifying one-time session: {str(e)}")
+    # Check if user has free credits available
+    elif free_credits_used < FREE_CREDITS:
+        # Use free credit (with watermark)
+        from app.utils.firestore import db
+        db.collection("users").document(user_id).update({
+            "free_credits_used": free_credits_used + 1,
+            "total_generated": user.get("total_generated", 0) + 1
+        })
+        logger.info(f"Used 1 free credit for user {user_id}. Used: {free_credits_used + 1}/{FREE_CREDITS}")
+        return {"has_watermark": True}
 
-    tier = user.get("subscription_tier", "free")
-    usage_count = user.get("usage_count", 0)
-    usage_limit = USAGE_LIMITS.get(tier, 5)
-
-    # Check if unlimited (pro tier)
-    if usage_limit == -1:
-        return
-
-    # Check if user has exceeded limit
-    if usage_count >= usage_limit:
+    # No credits available
+    else:
         raise HTTPException(
-            status_code=429,
-            detail=f"Usage limit exceeded. You've used {usage_count}/{usage_limit} images. Please upgrade your plan."
+            status_code=402,  # Payment Required
+            detail="No credits available. Please purchase credits to generate avatars."
         )
 
 
 @router.post("/generate", response_model=GenerateResponse, status_code=201)
 async def generate(
     file: UploadFile = File(..., description="Image file to process"),
-    session_id: str = None,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -128,8 +131,8 @@ async def generate(
         # Validate file
         validate_image_file(file)
 
-        # Check usage limits (pass session_id for one-time verification)
-        await check_user_usage(user_id, session_id)
+        # Check and deduct credit (also determines if watermark needed)
+        credit_result = await check_and_deduct_credit(user_id)
 
         # Generate job ID
         job_id = str(uuid.uuid4())
@@ -144,11 +147,8 @@ async def generate(
             content_type=file.content_type or "image/jpeg"
         )
 
-        # Create job in Firestore
-        await create_job(job_id, user_id, input_url)
-
-        # Increment user usage
-        await increment_user_usage(user_id)
+        # Create job in Firestore with watermark flag
+        await create_job(job_id, user_id, input_url, credit_result["has_watermark"])
 
         # Publish to Pub/Sub
         message_id = await publish_job(PROJECT_ID, PUBSUB_TOPIC, job_id)

@@ -97,7 +97,7 @@ async def increment_user_usage(user_id: str) -> None:
         raise
 
 
-async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
+async def create_job(job_id: str, user_id: str, input_image_url: str, has_watermark: bool = False) -> str:
     """
     Create a new job in Firestore
 
@@ -105,6 +105,7 @@ async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
         job_id: Job ID (provided by caller)
         user_id: User ID
         input_image_url: GCS URL of uploaded image
+        has_watermark: Whether to apply watermark (free tier)
 
     Returns:
         Job ID
@@ -119,11 +120,12 @@ async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
             "input_image_url": input_image_url,
             "output_image_url": None,
             "error_message": None,
+            "has_watermark": has_watermark,  # Flag for worker
             "metadata": {}
         }
 
         db.collection("jobs").document(job_id).set(job_data)
-        logger.info(f"Created job: {job_id} for user: {user_id}")
+        logger.info(f"Created job: {job_id} for user: {user_id} (watermark: {has_watermark})")
 
         return job_id
 
