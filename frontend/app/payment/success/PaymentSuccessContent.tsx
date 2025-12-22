@@ -29,6 +29,9 @@ export default function PaymentSuccessContent() {
     router.push('/');
   };
 
+  const creditsParam = searchParams.get('credits');
+  const creditsAdded = creditsParam ? parseInt(creditsParam) : null;
+
   return (
     <div className="min-h-screen bg-[#e6e7f0] flex items-center justify-center p-6">
       <div className="neu-card rounded-3xl p-12 max-w-md text-center">
@@ -41,26 +44,21 @@ export default function PaymentSuccessContent() {
         <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
 
         {loading ? (
-          <p className="text-[#7a7a8e] mb-8">Loading your subscription...</p>
+          <p className="text-[#7a7a8e] mb-8">Loading your credits...</p>
         ) : (
           <>
-            <p className="text-[#7a7a8e] mb-2">
-              You're now on the <span className="font-bold text-[#8b7fc7] capitalize">{subscription?.subscription_tier}</span> plan
-            </p>
-            {subscription?.subscription_status === 'trialing' && (
-              <p className="text-sm text-[#7a7a8e] mb-8">
-                Your 7-day free trial is active. You won't be charged until {
-                  subscription.current_period_end
-                    ? new Date(subscription.current_period_end).toLocaleDateString()
-                    : 'trial ends'
-                }
-              </p>
+            {creditsAdded && (
+              <div className="bg-[#8b7fc7]/10 rounded-2xl p-4 mb-4">
+                <p className="text-lg font-bold text-[#8b7fc7]">
+                  +{creditsAdded} Credit{creditsAdded !== 1 ? 's' : ''} Added!
+                </p>
+              </div>
             )}
-            <p className="text-[#7a7a8e] mb-8">
-              {subscription?.usage_limit === -1
-                ? 'Enjoy unlimited avatar generations!'
-                : `You have ${subscription ? subscription.usage_limit - subscription.usage_count : 0} avatars remaining.`
-              }
+            <p className="text-[#7a7a8e] mb-2">
+              You now have <span className="font-bold text-[#8b7fc7] text-xl">{subscription?.credits || 0}</span> credits
+            </p>
+            <p className="text-sm text-[#7a7a8e] mb-8">
+              Each credit generates one pixel art avatar without watermark
             </p>
           </>
         )}

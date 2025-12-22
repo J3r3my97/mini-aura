@@ -31,15 +31,6 @@ export default function Account() {
     }
   };
 
-  const handleManageSubscription = async () => {
-    try {
-      const portal = await api.createPortalSession();
-      window.location.href = portal.url;
-    } catch (error) {
-      console.error('Portal error:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#e6e7f0] flex items-center justify-center">
@@ -48,72 +39,57 @@ export default function Account() {
     );
   }
 
+  const freeCreditsRemaining = 1 - (subscription?.free_credits_used || 0);
+
   return (
     <div className="min-h-screen bg-[#e6e7f0] py-20">
       <div className="container mx-auto px-6 max-w-4xl">
         <h1 className="text-5xl font-bold mb-12">Account Settings</h1>
 
-        {/* Subscription Card */}
+        {/* Credits Card */}
         <div className="neu-card rounded-3xl p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Subscription</h2>
+          <h2 className="text-2xl font-bold mb-6">Credits & Usage</h2>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
-              <p className="text-sm text-[#7a7a8e] mb-1">Current Plan</p>
-              <p className="text-2xl font-bold text-[#8b7fc7] capitalize">
-                {subscription?.subscription_tier}
+              <p className="text-sm text-[#7a7a8e] mb-1">Available Credits</p>
+              <p className="text-3xl font-bold text-[#8b7fc7]">
+                {subscription?.credits || 0}
               </p>
+              <p className="text-xs text-[#7a7a8e] mt-1">Paid credits (no watermark)</p>
             </div>
 
             <div>
-              <p className="text-sm text-[#7a7a8e] mb-1">Usage</p>
-              <p className="text-2xl font-bold">
-                {subscription?.usage_count} / {
-                  subscription?.usage_limit === -1
-                    ? '∞'
-                    : subscription?.usage_limit
-                }
+              <p className="text-sm text-[#7a7a8e] mb-1">Free Credits</p>
+              <p className="text-3xl font-bold text-[#7bc89d]">
+                {freeCreditsRemaining}
               </p>
+              <p className="text-xs text-[#7a7a8e] mt-1">Remaining (with watermark)</p>
             </div>
 
-            {subscription?.subscription_status === 'trialing' && (
-              <div className="md:col-span-2">
-                <p className="text-sm text-[#7a7a8e] mb-1">Trial Ends</p>
-                <p className="text-lg font-semibold">
-                  {subscription.trial_end
-                    ? new Date(subscription.trial_end).toLocaleDateString()
-                    : 'N/A'}
-                </p>
-              </div>
-            )}
-
-            {subscription?.current_period_end && subscription?.subscription_tier !== 'free' && (
-              <div className="md:col-span-2">
-                <p className="text-sm text-[#7a7a8e] mb-1">Next Billing Date</p>
-                <p className="text-lg font-semibold">
-                  {new Date(subscription.current_period_end).toLocaleDateString()}
-                </p>
-              </div>
-            )}
+            <div>
+              <p className="text-sm text-[#7a7a8e] mb-1">Total Generated</p>
+              <p className="text-3xl font-bold">
+                {subscription?.total_generated || 0}
+              </p>
+              <p className="text-xs text-[#7a7a8e] mt-1">All-time avatars</p>
+            </div>
           </div>
 
-          {subscription?.subscription_tier !== 'free' && (
-            <button
-              onClick={handleManageSubscription}
-              className="neu-button-accent"
-            >
-              Manage Subscription
-            </button>
+          {subscription && subscription.credits === 0 && freeCreditsRemaining === 0 && (
+            <div className="bg-[#8b7fc7]/10 border border-[#8b7fc7]/30 rounded-2xl p-4 mb-6">
+              <p className="text-[#4a4a5e] font-medium">
+                ⚠️ You're out of credits. Purchase more to continue generating avatars!
+              </p>
+            </div>
           )}
 
-          {subscription?.subscription_tier === 'free' && (
-            <button
-              onClick={() => router.push('/#pricing')}
-              className="neu-button-accent"
-            >
-              Upgrade Plan
-            </button>
-          )}
+          <button
+            onClick={() => router.push('/#pricing')}
+            className="neu-button-accent"
+          >
+            Purchase More Credits
+          </button>
         </div>
 
         {/* Account Info */}
