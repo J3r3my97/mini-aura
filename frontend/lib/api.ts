@@ -1,5 +1,5 @@
 /**
- * API Client for Mini-Me Backend
+ * API Client for Mini-Aura Backend
  * Handles all API requests with Firebase authentication
  */
 
@@ -61,17 +61,13 @@ class ApiClient {
   /**
    * Generate pixel art avatar
    * @param file Image file to process
-   * @param sessionId Optional Stripe session ID for one-time payment
    * @returns Job ID and status
    */
-  async generateAvatar(file: File, sessionId?: string): Promise<GenerateResponse> {
+  async generateAvatar(file: File): Promise<GenerateResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Add session_id as query parameter if present
-    const url = sessionId ? `/api/generate?session_id=${sessionId}` : '/api/generate';
-
-    const response = await this.client.post<GenerateResponse>(url, formData, {
+    const response = await this.client.post<GenerateResponse>('/api/generate', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -138,14 +134,14 @@ class ApiClient {
   }
 
   /**
-   * Create Stripe checkout session
-   * @param paymentType Type of payment: 'pro' or 'onetime'
+   * Create Stripe checkout session for credit purchase
+   * @param packageId Credit package ID: '1_credit', '5_credits', or '10_credits'
    * @param successUrl Optional success redirect URL (defaults to current origin + /payment/success)
    * @param cancelUrl Optional cancel redirect URL (defaults to current origin + /payment/cancelled)
    * @returns Checkout session with redirect URL
    */
   async createCheckoutSession(
-    paymentType: 'pro' | 'onetime',
+    packageId: '1_credit' | '5_credits' | '10_credits',
     successUrl?: string,
     cancelUrl?: string
   ): Promise<CheckoutSessionResponse> {
@@ -157,7 +153,7 @@ class ApiClient {
     const response = await this.client.post<CheckoutSessionResponse>(
       '/api/payments/create-checkout-session',
       {
-        payment_type: paymentType,
+        package: packageId,
         success_url: finalSuccessUrl,
         cancel_url: finalCancelUrl
       }
@@ -228,13 +224,10 @@ export interface CheckoutSessionResponse {
 
 export interface SubscriptionStatus {
   user_id: string;
-  subscription_tier: string;
-  subscription_status?: string;
-  usage_count: number;
-  usage_limit: number;
-  trial_end?: string;
-  current_period_end?: string;
-  has_payment_method: boolean;
+  credits: number;  // Available paid credits
+  free_credits_used: number;  // How many free credits used
+  total_generated: number;  // Total avatars generated (all time)
+  has_watermark: boolean;  // True if currently using free credits
 }
 
 // ============================================================================

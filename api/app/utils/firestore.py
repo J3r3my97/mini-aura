@@ -29,18 +29,13 @@ async def create_user(user_id: str, email: str) -> Dict[str, Any]:
             "user_id": user_id,
             "email": email,
             "created_at": datetime.utcnow(),
-            "subscription_tier": "free",
-            "subscription_status": "active",
-            "usage_count": 0,
-            "usage_limit": 5,  # Free tier
             "last_login": datetime.utcnow(),
+            # Credit system
+            "credits": 0,  # Paid credits
+            "free_credits_used": 0,  # Track free credit usage
+            "total_generated": 0,  # Total avatars generated
             # Stripe fields
-            "stripe_customer_id": None,
-            "stripe_subscription_id": None,
-            "stripe_subscription_status": None,
-            "trial_end": None,
-            "subscription_current_period_end": None,
-            "payment_method_added": False
+            "stripe_customer_id": None
         }
 
         db.collection("users").document(user_id).set(user_data)
@@ -97,7 +92,7 @@ async def increment_user_usage(user_id: str) -> None:
         raise
 
 
-async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
+async def create_job(job_id: str, user_id: str, input_image_url: str, has_watermark: bool = False) -> str:
     """
     Create a new job in Firestore
 
@@ -105,6 +100,7 @@ async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
         job_id: Job ID (provided by caller)
         user_id: User ID
         input_image_url: GCS URL of uploaded image
+        has_watermark: Whether to apply watermark (free tier)
 
     Returns:
         Job ID
@@ -119,11 +115,12 @@ async def create_job(job_id: str, user_id: str, input_image_url: str) -> str:
             "input_image_url": input_image_url,
             "output_image_url": None,
             "error_message": None,
+            "has_watermark": has_watermark,  # Flag for worker
             "metadata": {}
         }
 
         db.collection("jobs").document(job_id).set(job_data)
-        logger.info(f"Created job: {job_id} for user: {user_id}")
+        logger.info(f"Created job: {job_id} for user: {user_id} (watermark: {has_watermark})")
 
         return job_id
 

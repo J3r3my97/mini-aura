@@ -1,13 +1,16 @@
 """
-Mini-Me API Service
+Mini-Aura API Service
 FastAPI backend for handling uploads, auth, and job management
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 import logging
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Import routers
 from app.routes import generate, jobs, payments, webhooks
@@ -20,11 +23,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
-    logger.info("🚀 Mini-Me API starting up...")
+    logger.info("🚀 Mini-Aura API starting up...")
 
     # Initialize Firebase Admin SDK
     try:
@@ -37,14 +43,18 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("👋 Mini-Me API shutting down...")
+    logger.info("👋 Mini-Aura API shutting down...")
 
 app = FastAPI(
-    title="Mini-Me API",
+    title="Mini-Aura API",
     description="AI Pixel Art Avatar Generator",
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Attach rate limiter to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS configuration - allow all origins for now (restrict in production)
 app.add_middleware(
@@ -59,7 +69,7 @@ app.add_middleware(
 async def root():
     """Health check endpoint"""
     return {
-        "service": "mini-me-api",
+        "service": "mini-aura-api",
         "status": "healthy",
         "version": "1.0.0"
     }

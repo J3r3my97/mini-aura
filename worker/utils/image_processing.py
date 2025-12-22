@@ -270,7 +270,7 @@ async def add_watermark(
         img = Image.alpha_composite(img, watermark)
 
         # Save
-        output_path = image_path.replace("_composite", "_watermarked")
+        output_path = image_path.replace("_isolated", "_watermarked").replace(".png", "_watermarked.png")
         img.save(output_path, "PNG")
 
         logger.info(f"Watermarked image saved to {output_path}")

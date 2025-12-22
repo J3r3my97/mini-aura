@@ -57,19 +57,9 @@ export default function Home() {
         quality: 0.9,
       });
 
-      // Check for one-time session ID in URL (from payment success redirect)
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('session_id');
-      const isOnetime = urlParams.get('onetime');
-
-      // Upload and generate (include session_id if present)
-      const response = await api.generateAvatar(compressedFile, sessionId || undefined);
+      // Upload and generate
+      const response = await api.generateAvatar(compressedFile);
       console.log('Generation started:', response);
-
-      // Clear URL parameters after use
-      if (sessionId && isOnetime) {
-        window.history.replaceState({}, '', '/');
-      }
 
       // Start polling for status
       const finalJob = await api.pollJobStatus(
@@ -125,7 +115,7 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mini-me-${currentJob?.job_id || 'customized'}.png`;
+      a.download = `mini-aura-${currentJob?.job_id || 'customized'}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -141,14 +131,11 @@ export default function Home() {
       <header className="sticky top-0 bg-[#e6e7f0] z-50">
         <nav className="container mx-auto px-6 py-8 flex justify-between items-center max-w-7xl">
           <a href="#" className="text-3xl font-extrabold text-[#8b7fc7] tracking-tight">
-            Mini-Me
+            Mini-Aura
           </a>
           <div className="flex items-center gap-8">
             <a href="#features" className="text-[#4a4a5e] font-medium hover:text-[#8b7fc7] transition-colors hidden md:block">
               Features
-            </a>
-            <a href="#examples" className="text-[#4a4a5e] font-medium hover:text-[#8b7fc7] transition-colors hidden md:block">
-              Examples
             </a>
             <a href="#pricing" className="text-[#4a4a5e] font-medium hover:text-[#8b7fc7] transition-colors hidden md:block">
               Pricing
@@ -332,33 +319,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Gallery Section */}
-      <section id="examples" className="py-20 bg-[#f0f1f7]">
-        <div className="container mx-auto px-6 max-w-7xl">
-          <h2 className="section-title">Real Transformations</h2>
-          <div className="grid md:grid-cols-4 gap-8 mt-12">
-            {galleryImages.map((img, idx) => (
-              <div key={idx} className="neu-card aspect-square rounded-3xl overflow-hidden">
-                <Image
-                  src={img.url}
-                  alt={img.alt}
-                  width={600}
-                  height={600}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-          <p className="text-center mt-8 text-[#7a7a8e]">
-            Note: These are example portraits. Generated pixel art results will be shown after upload.
-          </p>
-        </div>
-      </section>
 
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
         <div className="container mx-auto px-6 max-w-7xl">
-          <h2 className="section-title">Simple Pricing</h2>
+          <h2 className="section-title">Simple Pay-As-You-Go Pricing</h2>
+
+          {/* Free tier banner */}
+          <div className="max-w-3xl mx-auto mb-12 neu-card rounded-3xl p-8 text-center bg-gradient-to-br from-[#7bc89d]/10 to-[#8b7fc7]/10">
+            <div className="text-4xl mb-4">🎉</div>
+            <h3 className="text-2xl font-bold mb-2 text-[#4a4a5e]">
+              Everyone Gets 1 Free Avatar!
+            </h3>
+            <p className="text-[#7a7a8e]">
+              Try it out for free (with watermark). No credit card required. Just sign up and start creating!
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan, idx) => (
               <PricingCard key={idx} {...plan} user={user} setShowSignIn={setShowSignIn} setError={setError} />
@@ -387,7 +364,7 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center pt-8 border-t border-[#c8c9d4]">
-            <p className="text-[#7a7a8e]">&copy; 2025 Mini-Me. All rights reserved. Built with AI magic.</p>
+            <p className="text-[#7a7a8e]">&copy; 2025 Mini-Aura. All rights reserved. Built with AI magic.</p>
           </div>
         </div>
       </footer>
@@ -425,7 +402,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
   );
 }
 
-function PricingCard({ name, price, period, features, featured, badge, user, setShowSignIn, setError }: any) {
+function PricingCard({ name, price, package: packageId, credits, features, featured, badge, user, setShowSignIn, setError }: any) {
   const [loading, setLoading] = useState(false);
 
   const handleGetStarted = async () => {
@@ -438,20 +415,8 @@ function PricingCard({ name, price, period, features, featured, badge, user, set
     try {
       setLoading(true);
 
-      // Determine payment type
-      let paymentType: 'pro' | 'onetime';
-      if (name === 'Pro') {
-        paymentType = 'pro';
-      } else if (name === 'One-Time') {
-        paymentType = 'onetime';
-      } else {
-        // Free tier - just scroll to upload
-        document.querySelector('.upload-zone')?.scrollIntoView({ behavior: 'smooth' });
-        return;
-      }
-
-      // Create checkout session
-      const session = await api.createCheckoutSession(paymentType);
+      // Create checkout session with credit package
+      const session = await api.createCheckoutSession(packageId);
 
       // Redirect to Stripe checkout
       window.location.href = session.url;
@@ -474,7 +439,6 @@ function PricingCard({ name, price, period, features, featured, badge, user, set
       <h3 className="text-3xl font-extrabold mb-4">{name}</h3>
       <div className="mb-2">
         <span className="text-6xl font-extrabold text-[#8b7fc7]">{price}</span>
-        <span className="text-xl text-[#7a7a8e] font-medium">/{period}</span>
       </div>
       <ul className="space-y-3 my-8 text-left">
         {features.map((feature: string, idx: number) => (
@@ -489,29 +453,22 @@ function PricingCard({ name, price, period, features, featured, badge, user, set
         disabled={loading}
         className={featured ? 'neu-button-accent w-full' : 'neu-button w-full'}
       >
-        {loading ? 'Loading...' : (featured ? 'Start Free Trial' : 'Get Started')}
+        {loading ? 'Loading...' : 'Purchase Credits'}
       </button>
     </div>
   );
 }
 
 // Data
-const galleryImages = [
-  { url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&q=80', alt: 'Portrait example' },
-  { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80', alt: 'Portrait example' },
-  { url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80', alt: 'Portrait example' },
-  { url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&q=80', alt: 'Portrait example' },
-];
-
 const pricingPlans = [
-  { name: 'Free', price: '$0', period: 'lifetime', features: ['5 avatars (lifetime)', 'Standard quality', 'Basic support'] },
-  { name: 'Pro', price: '$9', period: 'month', features: ['Unlimited avatars', 'HD quality exports', 'No watermarks', 'Priority processing', '7-day free trial', 'Commercial license'], featured: true, badge: 'Most Popular' },
-  { name: 'One-Time', price: '$3', period: 'avatar', features: ['Single HD avatar', 'Instant generation', 'No subscription', 'No watermark'] },
+  { name: '1 Avatar', price: '$2.99', credits: 1, package: '1_credit', features: ['1 avatar credit', 'No watermark', 'HD quality', 'Perfect for trying it out'] },
+  { name: '5 Avatars', price: '$12.99', credits: 5, package: '5_credits', features: ['5 avatar credits', 'No watermarks', 'HD quality', 'Save $2 ($2.60/avatar)', 'Great for friends'], featured: true, badge: 'Great Value' },
+  { name: '10 Avatars', price: '$19.99', credits: 10, package: '10_credits', features: ['10 avatar credits', 'No watermarks', 'HD quality', 'Save $10 ($2.00/avatar)', 'Best for groups'], featured: true, badge: 'BEST VALUE' },
 ];
 
 const footerSections = [
   { title: 'Product', links: [{ text: 'Features', href: '#features' }, { text: 'Pricing', href: '#pricing' }, { text: 'API', href: '#' }, { text: 'Roadmap', href: '#' }] },
   { title: 'Company', links: [{ text: 'About', href: '#' }, { text: 'Blog', href: '#' }, { text: 'Careers', href: '#' }, { text: 'Press Kit', href: '#' }] },
   { title: 'Resources', links: [{ text: 'Documentation', href: '#' }, { text: 'Tutorials', href: '#' }, { text: 'Support', href: '#' }, { text: 'Status', href: '#' }] },
-  { title: 'Legal', links: [{ text: 'Privacy', href: '#' }, { text: 'Terms', href: '#' }, { text: 'License', href: '#' }, { text: 'Cookie Policy', href: '#' }] },
+  { title: 'Legal', links: [{ text: 'Privacy', href: '/privacy' }, { text: 'Terms', href: '/terms' }, { text: 'License', href: '#' }, { text: 'Cookie Policy', href: '#' }] },
 ];

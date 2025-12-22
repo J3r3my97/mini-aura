@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "https://miniaura.aurafarmer.co",
+      "https://mini-aura.vercel.app",
+      "https://*.vercel.app"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
+    "maxAgeSeconds": 3600
+  }
+]

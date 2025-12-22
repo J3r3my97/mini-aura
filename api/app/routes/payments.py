@@ -9,8 +9,7 @@ from typing import Literal
 
 from config import (
     STRIPE_SECRET_KEY,
-    STRIPE_PRO_PRICE_ID,
-    STRIPE_ONETIME_PRICE_ID,
+    CREDIT_PACKAGES,
     FRONTEND_URL,
     PAYMENT_SUCCESS_URL,
     PAYMENT_CANCEL_URL,
@@ -34,18 +33,31 @@ async def create_checkout_session(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Create a Stripe Checkout Session for Pro subscription or one-time payment
+    Create a Stripe Checkout Session for purchasing credits
 
     Flow:
     1. Get or create Stripe customer
-    2. Create checkout session with appropriate price
+    2. Create checkout session for selected credit package
     3. Return session URL for redirect
     """
     try:
         user_id = current_user["user_id"]
         email = current_user["email"]
 
-        logger.info(f"Creating checkout session for user {user_id}, type: {request.payment_type}")
+        logger.info(f"Creating checkout session for user {user_id}, package: {request.package}")
+
+        # Validate package
+        if request.package not in CREDIT_PACKAGES:
+            raise HTTPException(status_code=400, detail="Invalid credit package")
+
+        package_info = CREDIT_PACKAGES[request.package]
+        price_id = package_info["stripe_price_id"]
+
+        if not price_id:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Stripe price ID not configured for {request.package}"
+            )
 
         # Get or create Stripe customer
         stripe_customer_id = current_user.get("stripe_customer_id")
@@ -67,52 +79,28 @@ async def create_checkout_session(
             })
             logger.info(f"Created Stripe customer: {stripe_customer_id}")
 
-        # Determine price ID and mode based on payment type
-        if request.payment_type == "pro":
-            price_id = STRIPE_PRO_PRICE_ID
-            mode = "subscription"
-            # Use custom success URL if provided, otherwise use config default
-            base_success_url = request.success_url or PAYMENT_SUCCESS_URL
-            success_url = f"{base_success_url}?session_id={{CHECKOUT_SESSION_ID}}"
-        elif request.payment_type == "onetime":
-            price_id = STRIPE_ONETIME_PRICE_ID
-            mode = "payment"
-            # For one-time, redirect directly to generation flow
-            base_frontend_url = request.success_url or FRONTEND_URL
-            success_url = f"{base_frontend_url}?session_id={{CHECKOUT_SESSION_ID}}&onetime=true"
-        else:
-            raise HTTPException(status_code=400, detail="Invalid payment type")
-
-        # Use custom cancel URL if provided, otherwise use config default
+        # Use custom URLs if provided, otherwise use config defaults
+        base_success_url = request.success_url or FRONTEND_URL
+        success_url = f"{base_success_url}?session_id={{CHECKOUT_SESSION_ID}}&credits={package_info['credits']}"
         cancel_url = request.cancel_url or PAYMENT_CANCEL_URL
 
         # Create checkout session
-        session_params = {
-            "customer": stripe_customer_id,
-            "payment_method_types": ["card"],
-            "line_items": [{
+        session = stripe.checkout.Session.create(
+            customer=stripe_customer_id,
+            payment_method_types=["card"],
+            line_items=[{
                 "price": price_id,
                 "quantity": 1
             }],
-            "mode": mode,
-            "success_url": success_url,
-            "cancel_url": cancel_url,
-            "metadata": {
+            mode="payment",  # One-time payment, not subscription
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
                 "firebase_uid": user_id,
-                "payment_type": request.payment_type
+                "package": request.package,
+                "credits": package_info["credits"]
             }
-        }
-
-        # For subscriptions, enable free trial
-        if mode == "subscription":
-            session_params["subscription_data"] = {
-                "trial_period_days": 7,
-                "metadata": {
-                    "firebase_uid": user_id
-                }
-            }
-
-        session = stripe.checkout.Session.create(**session_params)
+        )
 
         logger.info(f"Created checkout session: {session.id}")
 
@@ -174,29 +162,34 @@ async def get_subscription_status(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get current user's subscription status
+    Get current user's credit balance and usage
 
     Returns:
-    - Current tier
-    - Usage count and limit
-    - Subscription status (active, trialing, cancelled)
-    - Trial end date
-    - Next billing date
+    - Available credits
+    - Free credits used
+    - Total avatars generated
+    - Whether watermark applies
     """
     try:
         user_id = current_user["user_id"]
+        from config import FREE_CREDITS
+
+        # Get credit info
+        credits = current_user.get("credits", 0)
+        free_credits_used = current_user.get("free_credits_used", 0)
+        total_generated = current_user.get("total_generated", 0)
+
+        # Watermark applies if using free credits (no paid credits left)
+        has_watermark = credits == 0 and free_credits_used < FREE_CREDITS
 
         return {
             "user_id": user_id,
-            "subscription_tier": current_user.get("subscription_tier", "free"),
-            "subscription_status": current_user.get("stripe_subscription_status"),
-            "usage_count": current_user.get("usage_count", 0),
-            "usage_limit": current_user.get("usage_limit", 5),
-            "trial_end": current_user.get("trial_end"),
-            "current_period_end": current_user.get("subscription_current_period_end"),
-            "has_payment_method": current_user.get("payment_method_added", False)
+            "credits": credits,
+            "free_credits_used": free_credits_used,
+            "total_generated": total_generated,
+            "has_watermark": has_watermark
         }
 
     except Exception as e:
         logger.error(f"Error getting subscription status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get subscription status")
+        raise HTTPException(status_code=500, detail="Failed to get credit status")
