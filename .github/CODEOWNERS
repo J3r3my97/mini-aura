@@ -1,0 +1,12 @@
+# Code Owners for Mini-Aura
+# These owners will be automatically requested for review when someone opens a pull request
+
+# Global owner - you own everything by default
+* @J3r3my97
+
+# Critical files - require your explicit approval
+/api/ @J3r3my97
+/worker/ @J3r3my97
+/frontend/ @J3r3my97
+/.github/ @J3r3my97
+/gcs-cors-config.json @J3r3my97
