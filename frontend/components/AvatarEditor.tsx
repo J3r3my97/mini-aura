@@ -258,11 +258,26 @@ export default function AvatarEditor({
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
+    // Scale factors to convert from screen coordinates to canvas coordinates
     const scaleFactorX = bgImg.width / containerRect.width;
     const scaleFactorY = bgImg.height / containerRect.height;
 
+    // Avatar is displayed at 200px width on screen, but actual image may be different
+    const avatarDisplayWidth = 200; // From the DOM style
+    const avatarImageToDisplayScale = fgImg.width / avatarDisplayWidth;
+
     // Use transform state values for canvas rendering
     const { translateX, translateY, scaleX, scaleY, rotate: rotateDeg } = transform;
+
+    console.log('Canvas rendering:', {
+      containerSize: { width: containerRect.width, height: containerRect.height },
+      canvasSize: { width: canvas.width, height: canvas.height },
+      avatarImageSize: { width: fgImg.width, height: fgImg.height },
+      avatarDisplayWidth,
+      avatarImageToDisplayScale,
+      scaleFactors: { x: scaleFactorX, y: scaleFactorY },
+      transform: { translateX, translateY, scaleX, scaleY, rotateDeg }
+    });
 
     // Apply transformations and draw avatar
     ctx.save();
@@ -273,15 +288,19 @@ export default function AvatarEditor({
 
     ctx.translate(avatarCenterX, avatarCenterY);
     ctx.rotate((rotateDeg * Math.PI) / 180);
-    ctx.scale(scaleX, scaleY);
+    // Scale includes both user's scale AND the image-to-display scale
+    ctx.scale(scaleX * scaleFactorX, scaleY * scaleFactorY);
 
-    // Draw avatar centered at current position
+    // Draw avatar at its display size (200px), which will be scaled by the context
+    const avatarDrawWidth = avatarDisplayWidth;
+    const avatarDrawHeight = (fgImg.height / fgImg.width) * avatarDisplayWidth;
+
     ctx.drawImage(
       fgImg,
-      -fgImg.width / 2,
-      -fgImg.height / 2,
-      fgImg.width,
-      fgImg.height
+      -avatarDrawWidth / 2,
+      -avatarDrawHeight / 2,
+      avatarDrawWidth,
+      avatarDrawHeight
     );
 
     ctx.restore();
