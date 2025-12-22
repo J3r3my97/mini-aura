@@ -247,51 +247,74 @@ export default function AvatarEditor({
       fgImg.src = avatarImageUrl;
     });
 
-    // Set canvas size to match background image
-    canvas.width = bgImg.width;
-    canvas.height = bgImg.height;
-
-    // Draw background
-    ctx.drawImage(bgImg, 0, 0);
-
-    // Calculate avatar position relative to canvas
+    // Get container dimensions
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
-    // Scale factors to convert from screen coordinates to canvas coordinates
-    const scaleFactorX = bgImg.width / containerRect.width;
-    const scaleFactorY = bgImg.height / containerRect.height;
+    // Calculate how the background image is displayed with object-contain
+    // object-contain scales to fit inside the container while maintaining aspect ratio
+    const containerAspect = containerRect.width / containerRect.height;
+    const imageAspect = bgImg.width / bgImg.height;
 
-    // Avatar is displayed at 200px width on screen, but actual image may be different
-    const avatarDisplayWidth = 200; // From the DOM style
-    const avatarImageToDisplayScale = fgImg.width / avatarDisplayWidth;
+    let displayedBgWidth, displayedBgHeight, bgOffsetX, bgOffsetY;
+
+    if (imageAspect > containerAspect) {
+      // Image is wider - constrained by width
+      displayedBgWidth = containerRect.width;
+      displayedBgHeight = containerRect.width / imageAspect;
+      bgOffsetX = 0;
+      bgOffsetY = (containerRect.height - displayedBgHeight) / 2;
+    } else {
+      // Image is taller - constrained by height
+      displayedBgWidth = containerRect.height * imageAspect;
+      displayedBgHeight = containerRect.height;
+      bgOffsetX = (containerRect.width - displayedBgWidth) / 2;
+      bgOffsetY = 0;
+    }
+
+    // Set canvas size to match background image actual size
+    canvas.width = bgImg.width;
+    canvas.height = bgImg.height;
+
+    // Draw background at full resolution
+    ctx.drawImage(bgImg, 0, 0, bgImg.width, bgImg.height);
+
+    // Scale factors to convert from screen coordinates to canvas coordinates
+    const scaleFactor = bgImg.width / displayedBgWidth; // Same for X and Y since we maintain aspect ratio
+
+    // Avatar is displayed at 200px width on screen
+    const avatarDisplayWidth = 200;
 
     // Use transform state values for canvas rendering
     const { translateX, translateY, scaleX, scaleY, rotate: rotateDeg } = transform;
 
     console.log('Canvas rendering:', {
       containerSize: { width: containerRect.width, height: containerRect.height },
+      displayedBgSize: { width: displayedBgWidth, height: displayedBgHeight },
+      bgOffset: { x: bgOffsetX, y: bgOffsetY },
       canvasSize: { width: canvas.width, height: canvas.height },
       avatarImageSize: { width: fgImg.width, height: fgImg.height },
       avatarDisplayWidth,
-      avatarImageToDisplayScale,
-      scaleFactors: { x: scaleFactorX, y: scaleFactorY },
+      scaleFactor,
       transform: { translateX, translateY, scaleX, scaleY, rotateDeg }
     });
 
     // Apply transformations and draw avatar
     ctx.save();
 
-    // Avatar center position (translate now positions the center directly)
-    const avatarCenterX = translateX * scaleFactorX;
-    const avatarCenterY = translateY * scaleFactorY;
+    // Adjust for background image offset due to object-contain centering
+    const adjustedX = translateX - bgOffsetX;
+    const adjustedY = translateY - bgOffsetY;
+
+    // Avatar center position in canvas coordinates
+    const avatarCenterX = adjustedX * scaleFactor;
+    const avatarCenterY = adjustedY * scaleFactor;
 
     ctx.translate(avatarCenterX, avatarCenterY);
     ctx.rotate((rotateDeg * Math.PI) / 180);
-    // Scale includes both user's scale AND the image-to-display scale
-    ctx.scale(scaleX * scaleFactorX, scaleY * scaleFactorY);
+    ctx.scale(scaleX * scaleFactor, scaleY * scaleFactor);
 
-    // Draw avatar at its display size (200px), which will be scaled by the context
+    // Draw avatar at its display size
     const avatarDrawWidth = avatarDisplayWidth;
     const avatarDrawHeight = (fgImg.height / fgImg.width) * avatarDisplayWidth;
 
@@ -332,7 +355,7 @@ export default function AvatarEditor({
           <img
             src={originalImageUrl}
             alt="Original"
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
 
           {/* Avatar Image (Moveable) */}
