@@ -16,7 +16,7 @@ from config import (
 )
 from utils.firestore import update_job_status, get_job
 from utils.gcs import download_from_gcs, upload_to_gcs
-from utils.image_processing import isolate_largest_character
+from utils.image_processing import isolate_largest_character, add_watermark
 from utils.ai import generate_pixel_art_with_gpt_reference
 
 logger = logging.getLogger(__name__)
@@ -70,12 +70,23 @@ async def run_pipeline(job_id: str) -> Dict[str, Any]:
         logger.info(f"✂️  Step 3/4: Isolating largest character")
         pixel_art_isolated_path = await isolate_largest_character(pixel_art_path)
 
+        # STEP 3.5: Apply watermark if using free credits
+        final_avatar_path = pixel_art_isolated_path
+        if job.get("has_watermark", False):
+            logger.info(f"💧 Step 3.5/4: Applying watermark (free tier)")
+            final_avatar_path = await add_watermark(
+                image_path=pixel_art_isolated_path,
+                text="mini-aura",
+                position="bottom-right",
+                opacity=0.6
+            )
+
         # STEP 4: Upload isolated avatar to GCS
         # Note: Compositing now happens on frontend for better UX and lower costs
         logger.info(f"📤 Step 4/4: Uploading isolated avatar to GCS")
         avatar_blob_name = f"{job_id}_avatar.png"
         avatar_url = await upload_to_gcs(
-            local_path=pixel_art_isolated_path,
+            local_path=final_avatar_path,
             bucket_name=GCS_RESULT_BUCKET,
             blob_name=avatar_blob_name
         )

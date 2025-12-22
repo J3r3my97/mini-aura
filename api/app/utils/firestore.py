@@ -29,18 +29,13 @@ async def create_user(user_id: str, email: str) -> Dict[str, Any]:
             "user_id": user_id,
             "email": email,
             "created_at": datetime.utcnow(),
-            "subscription_tier": "free",
-            "subscription_status": "active",
-            "usage_count": 0,
-            "usage_limit": 5,  # Free tier
             "last_login": datetime.utcnow(),
+            # Credit system
+            "credits": 0,  # Paid credits
+            "free_credits_used": 0,  # Track free credit usage
+            "total_generated": 0,  # Total avatars generated
             # Stripe fields
-            "stripe_customer_id": None,
-            "stripe_subscription_id": None,
-            "stripe_subscription_status": None,
-            "trial_end": None,
-            "subscription_current_period_end": None,
-            "payment_method_added": False
+            "stripe_customer_id": None
         }
 
         db.collection("users").document(user_id).set(user_data)
