@@ -27,7 +27,7 @@ export default function AvatarEditor({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Transform state (only for canvas rendering, not for live display)
+  // Transform state (synced with DOM for canvas rendering)
   const [transform, setTransform] = useState({
     translateX: 0,
     translateY: 0,
@@ -39,6 +39,52 @@ export default function AvatarEditor({
   // GBA button press states for visual feedback
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
 
+  // Helper function to parse transform string and update state
+  const syncTransformState = (transformStr: string) => {
+    // Try to parse named transform functions first
+    const translateMatch = transformStr.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
+    const scaleMatch = transformStr.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
+    const rotateMatch = transformStr.match(/rotate\(([^)]+)deg\)/);
+
+    if (translateMatch || scaleMatch || rotateMatch) {
+      const x = translateMatch ? parseFloat(translateMatch[1]) : transform.translateX;
+      const y = translateMatch ? parseFloat(translateMatch[2]) : transform.translateY;
+      const scaleX = scaleMatch ? parseFloat(scaleMatch[1]) : transform.scaleX;
+      const scaleY = scaleMatch && scaleMatch[2] ? parseFloat(scaleMatch[2]) : scaleX;
+      const rotation = rotateMatch ? parseFloat(rotateMatch[1]) : transform.rotate;
+
+      setTransform({
+        translateX: x,
+        translateY: y,
+        scaleX,
+        scaleY,
+        rotate: rotation,
+      });
+    } else {
+      // Fallback: Try to parse matrix transform
+      const matrixMatch = transformStr.match(/matrix\(([^)]+)\)/);
+      if (matrixMatch && avatarRef.current) {
+        const values = matrixMatch[1].split(',').map(v => parseFloat(v.trim()));
+        if (values.length === 6) {
+          // matrix(a, b, c, d, e, f) where:
+          // a, d = scale, b, c = rotation/skew, e, f = translate
+          const [a, b, c, d, e, f] = values;
+          const scaleX = Math.sqrt(a * a + b * b);
+          const scaleY = Math.sqrt(c * c + d * d);
+          const rotation = Math.atan2(b, a) * (180 / Math.PI);
+
+          setTransform({
+            translateX: e,
+            translateY: f,
+            scaleX,
+            scaleY,
+            rotate: rotation,
+          });
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (avatarRef.current && containerRef.current) {
       // Calculate center position
@@ -46,12 +92,21 @@ export default function AvatarEditor({
       const centerX = containerRect.width / 2;
       const centerY = containerRect.height / 2;
 
+      // Update transform state with center position
+      const initialTransform = {
+        translateX: centerX,
+        translateY: centerY,
+        scaleX: 0.3,
+        scaleY: 0.3,
+        rotate: 0,
+      };
+      setTransform(initialTransform);
+
       // Position avatar at center using transform
-      // Since transformOrigin is at (100px, 100px), we translate to center the origin point
       const el = avatarRef.current;
       el.style.left = '0px';
       el.style.top = '0px';
-      el.style.transform = `translate(${centerX}px, ${centerY}px) rotate(${transform.rotate}deg) scale(${transform.scaleX}, ${transform.scaleY})`;
+      el.style.transform = `translate(${centerX}px, ${centerY}px) rotate(0deg) scale(0.3, 0.3)`;
 
       setTarget(el);
     }
@@ -127,6 +182,14 @@ export default function AvatarEditor({
 
       if (updated) {
         el.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`;
+        // Update transform state for canvas rendering
+        setTransform({
+          translateX: x,
+          translateY: y,
+          scaleX: scale,
+          scaleY: scale,
+          rotate: rotation,
+        });
       }
     };
 
@@ -156,6 +219,8 @@ export default function AvatarEditor({
   }, []);
 
   const handleDownload = async () => {
+    console.log('Starting download with transform:', transform);
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -191,25 +256,13 @@ export default function AvatarEditor({
 
     // Calculate avatar position relative to canvas
     const containerRect = containerRef.current?.getBoundingClientRect();
-    const avatarEl = avatarRef.current;
-    if (!containerRect || !avatarEl) return;
+    if (!containerRect) return;
 
     const scaleFactorX = bgImg.width / containerRect.width;
     const scaleFactorY = bgImg.height / containerRect.height;
 
-    // Get avatar's transform from DOM
-    const transformStr = avatarEl.style.transform;
-
-    // Parse transform values (translate, rotate, scale)
-    const translateMatch = transformStr.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
-    const scaleMatch = transformStr.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
-    const rotateMatch = transformStr.match(/rotate\(([^)]+)deg\)/);
-
-    const translateX = translateMatch ? parseFloat(translateMatch[1]) : 0;
-    const translateY = translateMatch ? parseFloat(translateMatch[2]) : 0;
-    const scaleX = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-    const scaleY = scaleMatch && scaleMatch[2] ? parseFloat(scaleMatch[2]) : scaleX;
-    const rotateDeg = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
+    // Use transform state values for canvas rendering
+    const { translateX, translateY, scaleX, scaleY, rotate: rotateDeg } = transform;
 
     // Apply transformations and draw avatar
     ctx.save();
@@ -236,7 +289,10 @@ export default function AvatarEditor({
     // Convert to blob and callback
     canvas.toBlob((blob) => {
       if (blob) {
+        console.log('Canvas composited successfully. Blob size:', blob.size, 'bytes');
         onSave(blob);
+      } else {
+        console.error('Failed to create blob from canvas');
       }
     }, 'image/png');
   };
@@ -285,14 +341,17 @@ export default function AvatarEditor({
               onDrag={({ target, transform }) => {
                 // Let Moveable handle the full transform
                 target.style.transform = transform;
+                syncTransformState(transform);
               }}
               onResize={({ target, transform }) => {
                 // Let Moveable handle the full transform (includes translate, rotate, scale)
                 target.style.transform = transform;
+                syncTransformState(transform);
               }}
               onRotate={({ target, transform }) => {
                 // Let Moveable handle the full transform
                 target.style.transform = transform;
+                syncTransformState(transform);
               }}
             />
           )}
