@@ -321,16 +321,32 @@ export default function AvatarEditor({
     console.log('Avatar display size:', avatarDimensions);
     console.log('Scale factor (screen→canvas):', scaleFactor);
     console.log('Transform state:', { translateX, translateY, scaleX, scaleY, rotateDeg });
-    console.log('Adjusted position:', { x: translateX - bgOffsetX, y: translateY - bgOffsetY });
-    console.log('Canvas position:', { x: (translateX - bgOffsetX) * scaleFactor, y: (translateY - bgOffsetY) * scaleFactor });
+    console.log('Avatar center on screen:', {
+      x: translateX + (avatarDimensions.width / 2),
+      y: translateY + (avatarDimensions.height / 2)
+    });
+    console.log('Avatar center adjusted for letterboxing:', {
+      x: (translateX + avatarDimensions.width / 2) - bgOffsetX,
+      y: (translateY + avatarDimensions.height / 2) - bgOffsetY
+    });
+    console.log('Avatar center in canvas coords:', {
+      x: ((translateX + avatarDimensions.width / 2) - bgOffsetX) * scaleFactor,
+      y: ((translateY + avatarDimensions.height / 2) - bgOffsetY) * scaleFactor
+    });
     console.log('=== END DEBUG ===');
 
     // Apply transformations and draw avatar
     ctx.save();
 
-    // Adjust for background image offset due to object-contain centering
-    const adjustedX = translateX - bgOffsetX;
-    const adjustedY = translateY - bgOffsetY;
+    // translateX/translateY are the translate() values (position of element's top-left)
+    // The avatar's center (transform-origin) is at the center of the avatar display dimensions
+    // So we need to add half the avatar dimensions to get the actual center position on screen
+    const avatarCenterXOnScreen = translateX + (avatarDimensions.width / 2);
+    const avatarCenterYOnScreen = translateY + (avatarDimensions.height / 2);
+
+    // Adjust for background image offset due to object-contain centering (letterboxing)
+    const adjustedX = avatarCenterXOnScreen - bgOffsetX;
+    const adjustedY = avatarCenterYOnScreen - bgOffsetY;
 
     // Avatar center position in canvas coordinates
     const avatarCenterX = adjustedX * scaleFactor;
