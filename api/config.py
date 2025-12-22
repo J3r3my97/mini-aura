@@ -44,9 +44,12 @@ PUBSUB_TOPIC = "generation-jobs"
 # API Keys
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")
-STRIPE_ONETIME_PRICE_ID = os.getenv("STRIPE_ONETIME_PRICE_ID")
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
+
+# Stripe Price IDs for Credit Packages
+STRIPE_1_CREDIT_PRICE_ID = os.getenv("STRIPE_1_CREDIT_PRICE_ID")
+STRIPE_5_CREDIT_PRICE_ID = os.getenv("STRIPE_5_CREDIT_PRICE_ID")
+STRIPE_10_CREDIT_PRICE_ID = os.getenv("STRIPE_10_CREDIT_PRICE_ID")
 
 # Frontend Configuration
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
@@ -62,12 +65,34 @@ ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/heic"}
 # Rate Limiting
 RATE_LIMIT_PER_MINUTE = 10
 
-# Usage Limits by Tier
-USAGE_LIMITS = {
-    "free": 5,
-    "starter": 20,
-    "creator": 100,
-    "pro": -1  # Unlimited
+# Pay-as-you-go Credit System
+FREE_CREDITS = 1  # Everyone gets 1 free avatar (with watermark)
+
+CREDIT_PACKAGES = {
+    "1_credit": {
+        "credits": 1,
+        "price_usd": 2.99,
+        "stripe_price_id": STRIPE_1_CREDIT_PRICE_ID,
+        "name": "1 Avatar",
+        "description": "Perfect for trying it out"
+    },
+    "5_credits": {
+        "credits": 5,
+        "price_usd": 12.99,
+        "stripe_price_id": STRIPE_5_CREDIT_PRICE_ID,
+        "name": "5 Avatars",
+        "description": "Save $2 • Great for friends",
+        "per_avatar_price": 2.60
+    },
+    "10_credits": {
+        "credits": 10,
+        "price_usd": 19.99,
+        "stripe_price_id": STRIPE_10_CREDIT_PRICE_ID,
+        "name": "10 Avatars",
+        "description": "Save $10 • Best Value!",
+        "per_avatar_price": 2.00,
+        "badge": "BEST VALUE"
+    }
 }
 
 # CORS Configuration

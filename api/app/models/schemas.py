@@ -91,10 +91,10 @@ class ErrorResponse(BaseModel):
 
 # Payment Models
 class CheckoutSessionRequest(BaseModel):
-    """Request to create checkout session"""
-    payment_type: Literal["pro", "onetime"] = Field(
+    """Request to create checkout session for credit purchase"""
+    package: Literal["1_credit", "5_credits", "10_credits"] = Field(
         ...,
-        description="Type of payment: 'pro' for subscription, 'onetime' for single avatar"
+        description="Credit package to purchase: '1_credit', '5_credits', or '10_credits'"
     )
     success_url: Optional[str] = Field(
         None,
@@ -113,12 +113,9 @@ class CheckoutSessionResponse(BaseModel):
 
 
 class SubscriptionStatus(BaseModel):
-    """User's current subscription status"""
+    """User's current credit balance and usage"""
     user_id: str
-    subscription_tier: str
-    subscription_status: Optional[str] = None
-    usage_count: int
-    usage_limit: int
-    trial_end: Optional[datetime] = None
-    current_period_end: Optional[datetime] = None
-    has_payment_method: bool
+    credits: int  # Available credits
+    free_credits_used: int  # How many free credits used
+    total_generated: int  # Total avatars generated (all time)
+    has_watermark: bool  # True if using free credits
