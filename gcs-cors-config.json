@@ -2,8 +2,7 @@
   {
     "origin": [
       "http://localhost:3000",
-      "https://aurafarmer.co",
-      "https://www.aurafarmer.co",
+      "https://miniaura.aurafarmer.co",
       "https://mini-aura.vercel.app",
       "https://*.vercel.app"
     ],

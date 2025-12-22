@@ -1,36 +1,33 @@
-# Custom Domain Setup: aurafarmer.co
+# Custom Domain Setup: miniaura.aurafarmer.co
 
 ## Overview
-This guide will help you set up `aurafarmer.co` as your production domain for Mini-Aura.
+This guide will help you set up `miniaura.aurafarmer.co` as a subdomain for Mini-Aura.
+
+This allows you to host multiple projects under your main domain:
+- `aurafarmer.co` - Your main site/portfolio
+- `miniaura.aurafarmer.co` - Mini-Aura app
+- `[other-project].aurafarmer.co` - Future projects
 
 ---
 
 ## 1. Vercel Domain Configuration
 
-### A. Add Domain to Vercel Project
+### A. Add Subdomain to Vercel Project
 
 1. Go to your Vercel dashboard: https://vercel.com/dashboard
 2. Select your `mini-aura` project
 3. Go to **Settings** → **Domains**
 4. Click **Add Domain**
-5. Enter: `aurafarmer.co`
-6. Also add: `www.aurafarmer.co` (recommended)
+5. Enter: `miniaura.aurafarmer.co`
 
-### B. Get DNS Records from Vercel
+### B. Get DNS Record from Vercel
 
-Vercel will provide you with DNS records to add. Typically:
+Vercel will provide you with a CNAME record. Typically:
 
-**For Root Domain (aurafarmer.co):**
-```
-Type: A
-Name: @
-Value: 76.76.21.21
-```
-
-**For WWW Subdomain (www.aurafarmer.co):**
+**For Subdomain (miniaura.aurafarmer.co):**
 ```
 Type: CNAME
-Name: www
+Name: miniaura
 Value: cname.vercel-dns.com
 ```
 
@@ -38,23 +35,18 @@ Value: cname.vercel-dns.com
 
 ## 2. Configure DNS at Your Domain Registrar
 
-Go to your domain registrar (where you bought aurafarmer.co) and add these DNS records:
+Go to your domain registrar (where you bought aurafarmer.co) and add this DNS record:
 
-### Records to Add:
+### Record to Add:
 
 ```
-# Root domain
-Type: A
-Host: @ (or leave blank)
-Value: 76.76.21.21
-TTL: 3600 (or Auto)
-
-# WWW subdomain
 Type: CNAME
-Host: www
+Host: miniaura
 Value: cname.vercel-dns.com
 TTL: 3600 (or Auto)
 ```
+
+**Note:** This is much simpler than root domain setup! Just one CNAME record.
 
 ### Common Registrars:
 
@@ -124,29 +116,25 @@ Vercel automatically provides SSL certificates for custom domains.
 
 ---
 
-## 6. Redirect Configuration
+## 6. Root Domain Setup (Optional)
 
-### Option A: Redirect www → non-www (Recommended)
+If you want `aurafarmer.co` to redirect to `miniaura.aurafarmer.co`:
 
-In Vercel → Settings → Domains:
-- Set `www.aurafarmer.co` to redirect to `aurafarmer.co`
+1. Add `aurafarmer.co` as a domain in Vercel
+2. Set it to redirect to `miniaura.aurafarmer.co`
 
-### Option B: Redirect non-www → www
-
-In Vercel → Settings → Domains:
-- Set `aurafarmer.co` to redirect to `www.aurafarmer.co`
+**Or** keep `aurafarmer.co` for your main portfolio/landing page!
 
 ---
 
 ## 7. Verify Setup
 
-After DNS propagates (can take up to 48 hours, usually < 1 hour):
+After DNS propagates (can take up to 48 hours, usually < 15 minutes for subdomains):
 
 ### Test Checklist:
 
-- [ ] https://aurafarmer.co loads correctly
-- [ ] https://www.aurafarmer.co loads correctly
-- [ ] SSL certificate shows as valid
+- [ ] https://miniaura.aurafarmer.co loads correctly
+- [ ] SSL certificate shows as valid (auto-configured by Vercel)
 - [ ] Images download without CORS errors
 - [ ] Stripe payments work
 - [ ] Account creation works
@@ -221,36 +209,41 @@ Enable in Vercel dashboard:
 Check if DNS is propagated globally:
 
 ```bash
-# Check A record
-dig aurafarmer.co +short
+# Check CNAME record
+dig miniaura.aurafarmer.co +short
 
-# Should return: 76.76.21.21
-
-# Check CNAME
-dig www.aurafarmer.co +short
-
-# Should return: cname.vercel-dns.com
+# Should return: cname.vercel-dns.com (or similar Vercel CNAME)
 ```
 
-Or use online tool: https://dnschecker.org/#A/aurafarmer.co
+Or use online tool: https://dnschecker.org/#CNAME/miniaura.aurafarmer.co
 
 ---
 
 ## Production Deployment Flow
 
 1. **Push to GitHub** → Triggers Vercel build
-2. **Vercel builds frontend** → Deploys to aurafarmer.co
-3. **Users visit** → https://aurafarmer.co
-4. **API calls go to** → Cloud Run (mini-me-api)
+2. **Vercel builds frontend** → Deploys to miniaura.aurafarmer.co
+3. **Users visit** → https://miniaura.aurafarmer.co
+4. **API calls go to** → Cloud Run (mini-aura-api)
 5. **Images stored in** → GCS buckets
 
 ---
 
 ## Final Production URLs
 
-**Frontend:** https://aurafarmer.co
+**Frontend:** https://miniaura.aurafarmer.co
 **API:** https://mini-me-api-[hash].a.run.app
 **Stripe Webhook:** https://mini-me-api-[hash].a.run.app/api/webhooks/stripe
+
+---
+
+## Benefits of Using a Subdomain
+
+✅ **Cleaner architecture** - Separate projects under one domain
+✅ **Easier DNS** - Just one CNAME record vs A + CNAME
+✅ **Faster propagation** - Subdomains typically propagate in < 15 minutes
+✅ **Flexible** - Easy to add more projects (blog.aurafarmer.co, etc.)
+✅ **Main domain free** - Keep aurafarmer.co for your portfolio/landing page
 
 ---
 
