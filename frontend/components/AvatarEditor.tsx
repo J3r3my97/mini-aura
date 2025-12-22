@@ -26,6 +26,7 @@ export default function AvatarEditor({
   const avatarRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [avatarDimensions, setAvatarDimensions] = useState({ width: 200, height: 200 });
 
   // Transform state (synced with DOM for canvas rendering)
   const [transform, setTransform] = useState({
@@ -85,8 +86,34 @@ export default function AvatarEditor({
     }
   };
 
+  // Calculate avatar dimensions when image loads
   useEffect(() => {
-    if (avatarRef.current && containerRef.current) {
+    if (avatarRef.current) {
+      const img = avatarRef.current;
+      const handleImageLoad = () => {
+        const displayWidth = 200;
+        const displayHeight = (img.naturalHeight / img.naturalWidth) * displayWidth;
+        setAvatarDimensions({ width: displayWidth, height: displayHeight });
+
+        // Update transform origin to center of actual image
+        const centerX = displayWidth / 2;
+        const centerY = displayHeight / 2;
+        img.style.transformOrigin = `${centerX}px ${centerY}px`;
+
+        console.log('Avatar dimensions:', { displayWidth, displayHeight, naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight });
+      };
+
+      if (img.complete) {
+        handleImageLoad();
+      } else {
+        img.addEventListener('load', handleImageLoad);
+        return () => img.removeEventListener('load', handleImageLoad);
+      }
+    }
+  }, [avatarImageUrl]);
+
+  useEffect(() => {
+    if (avatarRef.current && containerRef.current && avatarDimensions.height > 0) {
       // Calculate center position
       const containerRect = containerRef.current.getBoundingClientRect();
       const centerX = containerRect.width / 2;
@@ -110,7 +137,7 @@ export default function AvatarEditor({
 
       setTarget(el);
     }
-  }, []);
+  }, [avatarDimensions]);
 
   // GBA Controls - Keyboard event handlers
   useEffect(() => {
@@ -282,22 +309,21 @@ export default function AvatarEditor({
     // Scale factors to convert from screen coordinates to canvas coordinates
     const scaleFactor = bgImg.width / displayedBgWidth; // Same for X and Y since we maintain aspect ratio
 
-    // Avatar is displayed at 200px width on screen
-    const avatarDisplayWidth = 200;
-
     // Use transform state values for canvas rendering
     const { translateX, translateY, scaleX, scaleY, rotate: rotateDeg } = transform;
 
-    console.log('Canvas rendering:', {
-      containerSize: { width: containerRect.width, height: containerRect.height },
-      displayedBgSize: { width: displayedBgWidth, height: displayedBgHeight },
-      bgOffset: { x: bgOffsetX, y: bgOffsetY },
-      canvasSize: { width: canvas.width, height: canvas.height },
-      avatarImageSize: { width: fgImg.width, height: fgImg.height },
-      avatarDisplayWidth,
-      scaleFactor,
-      transform: { translateX, translateY, scaleX, scaleY, rotateDeg }
-    });
+    console.log('=== CANVAS RENDERING DEBUG ===');
+    console.log('Container:', { width: containerRect.width, height: containerRect.height });
+    console.log('Background displayed with object-contain:', { width: displayedBgWidth, height: displayedBgHeight });
+    console.log('Background offset (letterboxing):', { x: bgOffsetX, y: bgOffsetY });
+    console.log('Canvas (full resolution):', { width: canvas.width, height: canvas.height });
+    console.log('Avatar image:', { naturalWidth: fgImg.width, naturalHeight: fgImg.height });
+    console.log('Avatar display size:', avatarDimensions);
+    console.log('Scale factor (screen→canvas):', scaleFactor);
+    console.log('Transform state:', { translateX, translateY, scaleX, scaleY, rotateDeg });
+    console.log('Adjusted position:', { x: translateX - bgOffsetX, y: translateY - bgOffsetY });
+    console.log('Canvas position:', { x: (translateX - bgOffsetX) * scaleFactor, y: (translateY - bgOffsetY) * scaleFactor });
+    console.log('=== END DEBUG ===');
 
     // Apply transformations and draw avatar
     ctx.save();
@@ -314,16 +340,13 @@ export default function AvatarEditor({
     ctx.rotate((rotateDeg * Math.PI) / 180);
     ctx.scale(scaleX * scaleFactor, scaleY * scaleFactor);
 
-    // Draw avatar at its display size
-    const avatarDrawWidth = avatarDisplayWidth;
-    const avatarDrawHeight = (fgImg.height / fgImg.width) * avatarDisplayWidth;
-
+    // Draw avatar at its actual display size (accounts for aspect ratio)
     ctx.drawImage(
       fgImg,
-      -avatarDrawWidth / 2,
-      -avatarDrawHeight / 2,
-      avatarDrawWidth,
-      avatarDrawHeight
+      -avatarDimensions.width / 2,
+      -avatarDimensions.height / 2,
+      avatarDimensions.width,
+      avatarDimensions.height
     );
 
     ctx.restore();
@@ -367,7 +390,7 @@ export default function AvatarEditor({
             style={{
               width: '200px',
               height: 'auto',
-              transformOrigin: '100px 100px', // Center of 200px image
+              // transformOrigin is set dynamically in useEffect based on actual image aspect ratio
             }}
           />
 
