@@ -327,12 +327,12 @@ export default function Home() {
 
           {/* Free tier banner */}
           <div className="max-w-3xl mx-auto mb-12 neu-card rounded-3xl p-8 text-center bg-gradient-to-br from-[#7bc89d]/10 to-[#8b7fc7]/10">
-            <div className="text-4xl mb-4">🎉</div>
+            <div className="text-4xl mb-4">👤</div>
             <h3 className="text-2xl font-bold mb-2 text-[#4a4a5e]">
-              Everyone Gets 1 Free Avatar!
+              🆓 NPC Tier - Free Forever!
             </h3>
             <p className="text-[#7a7a8e]">
-              Try it out for free (with watermark). No credit card required. Just sign up and start creating!
+              Everyone gets 1 free avatar (with watermark). No credit card required. Just sign up and start creating!
             </p>
           </div>
 
@@ -461,9 +461,9 @@ function PricingCard({ name, price, package: packageId, credits, features, featu
 
 // Data
 const pricingPlans = [
-  { name: '1 Avatar', price: '$2.99', credits: 1, package: '1_credit', features: ['1 avatar credit', 'No watermark', 'HD quality', 'Perfect for trying it out'] },
-  { name: '5 Avatars', price: '$12.99', credits: 5, package: '5_credits', features: ['5 avatar credits', 'No watermarks', 'HD quality', 'Save $2 ($2.60/avatar)', 'Great for friends'], featured: true, badge: 'Great Value' },
-  { name: '10 Avatars', price: '$19.99', credits: 10, package: '10_credits', features: ['10 avatar credits', 'No watermarks', 'HD quality', 'Save $10 ($2.00/avatar)', 'Best for groups'], featured: true, badge: 'BEST VALUE' },
+  { name: 'Side Character', price: '$1.99', credits: 3, package: '1_credit', features: ['3 avatar credits', 'No watermark', 'HD quality', 'Just $0.66 each', 'Perfect for trying it out'] },
+  { name: 'Main Character', price: '$4.99', credits: 12, package: '5_credits', features: ['12 avatar credits', 'No watermarks', 'HD quality', 'Just $0.42 each', 'Try different photos & outfits'], featured: true, badge: 'BEST VALUE' },
+  { name: 'Villain', price: '$9.99', credits: 30, package: '10_credits', features: ['30 avatar credits', 'No watermarks', 'HD quality', 'Just $0.33 each', 'For content creators'], badge: 'Boss Pack' },
 ];
 
 const footerSections = [

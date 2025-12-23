@@ -70,28 +70,27 @@ FREE_CREDITS = 1  # Everyone gets 1 free avatar (with watermark)
 
 CREDIT_PACKAGES = {
     "1_credit": {
-        "credits": 1,
-        "price_usd": 2.99,
+        "credits": 3,
+        "price_usd": 1.99,
         "stripe_price_id": STRIPE_1_CREDIT_PRICE_ID,
-        "name": "1 Avatar",
-        "description": "Perfect for trying it out"
+        "name": "Side Character Pack",
+        "description": "Just $0.66 each • Perfect for trying it out"
     },
     "5_credits": {
-        "credits": 5,
-        "price_usd": 12.99,
+        "credits": 12,
+        "price_usd": 4.99,
         "stripe_price_id": STRIPE_5_CREDIT_PRICE_ID,
-        "name": "5 Avatars",
-        "description": "Save $2 • Great for friends",
-        "per_avatar_price": 2.60
+        "name": "Main Character Pack",
+        "description": "Just $0.42 each • Try different photos & outfits",
+        "per_avatar_price": 0.42
     },
     "10_credits": {
-        "credits": 10,
-        "price_usd": 19.99,
+        "credits": 30,
+        "price_usd": 9.99,
         "stripe_price_id": STRIPE_10_CREDIT_PRICE_ID,
-        "name": "10 Avatars",
-        "description": "Save $10 • Best Value!",
-        "per_avatar_price": 2.00,
-        "badge": "BEST VALUE"
+        "name": "Villain Pack",
+        "description": "Just $0.33 each • For content creators",
+        "per_avatar_price": 0.33
     }
 }
 
