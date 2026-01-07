@@ -140,6 +140,9 @@ export default function Home() {
             <a href="#pricing" className="text-[#4a4a5e] font-medium hover:text-[#8b7fc7] transition-colors hidden md:block">
               Pricing
             </a>
+            <a href="/blog" className="text-[#4a4a5e] font-medium hover:text-[#8b7fc7] transition-colors hidden md:block">
+              Blog
+            </a>
             {authLoading ? (
               <div className="w-24 h-10 bg-[#e6e7f0] rounded-2xl animate-pulse"></div>
             ) : user ? (
@@ -468,7 +471,7 @@ const pricingPlans = [
 
 const footerSections = [
   { title: 'Product', links: [{ text: 'Features', href: '#features' }, { text: 'Pricing', href: '#pricing' }, { text: 'API', href: '#' }, { text: 'Roadmap', href: '#' }] },
-  { title: 'Company', links: [{ text: 'About', href: '#' }, { text: 'Blog', href: '#' }, { text: 'Careers', href: '#' }, { text: 'Press Kit', href: '#' }] },
-  { title: 'Resources', links: [{ text: 'Documentation', href: '#' }, { text: 'Tutorials', href: '#' }, { text: 'Support', href: '#' }, { text: 'Status', href: '#' }] },
+  { title: 'Company', links: [{ text: 'About', href: '#' }, { text: 'Blog', href: '/blog' }, { text: 'Careers', href: '#' }, { text: 'Press Kit', href: '#' }] },
+  { title: 'Resources', links: [{ text: 'Pixel Art Guide', href: '/blog/what-is-pixel-art-avatar' }, { text: 'How to Create Avatar', href: '/blog/how-to-create-pixel-art-avatar-from-photo' }, { text: 'Fashion Avatar Guide', href: '/blog/fashion-avatar-guide' }, { text: 'Best Generators', href: '/blog/best-pixel-art-avatar-generators' }] },
   { title: 'Legal', links: [{ text: 'Privacy', href: '/privacy' }, { text: 'Terms', href: '/terms' }, { text: 'License', href: '#' }, { text: 'Cookie Policy', href: '#' }] },
 ];
