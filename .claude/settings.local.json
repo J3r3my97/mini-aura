@@ -11,7 +11,11 @@
       "Bash(__NEW_LINE__ if [ -z \"$STRIPE_WEBHOOK_SECRET\" ])",
       "Bash(__NEW_LINE__ if [ -z \"$STRIPE_1_CREDIT_PRICE_ID\" ])",
       "Bash(__NEW_LINE__ if [ -z \"$STRIPE_5_CREDIT_PRICE_ID\" ])",
-      "Bash(__NEW_LINE__ if [ -z \"$STRIPE_10_CREDIT_PRICE_ID\" ])"
+      "Bash(__NEW_LINE__ if [ -z \"$STRIPE_10_CREDIT_PRICE_ID\" ])",
+      "Bash(find:*)",
+      "Bash(git -C /Users/null/Workspace/mini-aura log --oneline --all)",
+      "Bash(npx tsc:*)",
+      "Bash(/usr/local/bin/npx tsc --noEmit)"
     ]
   }
 }
